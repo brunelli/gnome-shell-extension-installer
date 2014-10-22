@@ -3,7 +3,7 @@ GNOME Shell Extension Installer
 
 A bash script to install extensions from extensions.gnome.org
 
-# Help
+## Help
 
 ```
 Usage: gnome-shell-extension-installer EXTENSION_ID [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]
@@ -17,9 +17,9 @@ Usage example:
   # Installs "Small Panel Icon" for GNOME Shell 3.14 answering yes to all questions.
 ```
 
-# Installation
+## Installation
 
-## Manual installation
+### Manual installation
 
 ```
 wget -O gnome-shell-extensions-installer "https://github.com/ianbrunelli/gnome-shell-extension-installer/raw/master/gnome-shell-extension-installer"
@@ -27,6 +27,6 @@ chmod +x gnome-shell-extensions-installer
 mv gnome-shell-extensions-installer /usr/bin/
 ```
 
-## AUR (Arch Linux)
+### AUR (Arch Linux)
 
 [This is the package](https://aur.archlinux.org/packages/gnome-shell-extensions-installer). You know what do do.
