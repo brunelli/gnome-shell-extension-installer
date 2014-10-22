@@ -1,0 +1,154 @@
+#!/bin/bash
+
+ ###########################################################################
+ #                                                                         #
+ #                     GNOME Shell Extension Installer                     #
+ #                                                                         #
+ #   Version: 1.0 (22/10/2014)                                             #
+ #   Author: Ian Brunelli <ian@brunelli.me>                                #
+ #   URL: https://github.com/ianbrunelli/gnome-shell-extension-installer   #
+ #                                                                         #
+ ###########################################################################
+
+usage_guide() {
+    echo -e "Usage: `basename $0` EXTENSION_ID [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]\n" \
+            "\nOptions:"\
+            "\n  --yes \t\tSkip all prompts (be careful on using this!)."\
+            "\n  -h or --help \t\tPrint this message.\n" \
+            "\nUsage example:"\
+            "\n  `basename $0` 861 3.14 --yes"\
+            "\n  # Downloads \"Small Panel Icon\" for GNOME Shell 3.14"\
+            "answering yes to all questions."
+}
+
+check_version_validation() {
+    DISABLE_VERSION_VALIDATION=$( gsettings get org.gnome.shell disable-extension-version-validation )
+    [ "$DISABLE_VERSION_VALIDATION" == "true" ] ||
+    { echo -en "\nExtension version validation is enabled on GNOME Shell." \
+               "\nTo use extensions older than the current version of Shell, you have to disable it." \
+               "\nDo it now (y/N)? "
+      read DO_IT
+      [ "$DO_IT" == "y" ] ||
+      [ "$DO_IT" == "Y" ] &&
+      gsettings set org.gnome.shell disable-extension-version-validation true &&
+      echo -e "\nThe extension version validation has been disabled."; }
+}
+
+get_available_versions() {
+    AVAILABLE_VERSIONS=($( sed 's/[\"]*:[ ]*{[\"]*pk[\"]*:/\n/g' <<< "$1" | sed '$ d' | sed 's/^.*\"//g' | sort -rn ))
+    [ "$AVAILABLE_VERSIONS" ] &&
+    { echo -e "\nThis extension is available for the following versions of GNOME Shell:"
+      for VERSION in ${AVAILABLE_VERSIONS[@]}; do
+          echo "- $VERSION"
+      done
+      unset SELECTED_VERSION
+      while [ ! "$SELECTED_VERSION" ]; do
+          echo -n "Type a version to install: "
+          read INPUT
+          for VERSION in ${AVAILABLE_VERSIONS[@]}; do
+              [ "$INPUT" == "$VERSION" ] &&
+              SELECTED_VERSION="$INPUT"
+          done
+      done; }
+    [ "$SELECTED_VERSION" ] &&
+    check_version_validation &&
+    { DOWNLOAD_TARGET=$( sed "s/^.*$SELECTED_VERSION\": {\"pk[\": ]*\([^\"]*\),.*$/\1/" <<< "$1" )
+      echo -e "\n[$EXTENSION_NAME] Downloading extension"
+      if wget $DOWNLOAD_PARAMETERS -O "/tmp/shell-extension-install.$2.zip" \
+              "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET";
+      then
+          extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$2" &&
+          enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
+      else
+          echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
+      fi; }
+}
+
+enable_extension() {
+    ENABLED_EXTENSIONS=$( gsettings get org.gnome.shell enabled-extensions )
+    [ "$( grep -v "$2" <<< "$ENABLED_EXTENSIONS" )" ] &&
+    { echo "[$1] Enabling extension"
+      gsettings set org.gnome.shell enabled-extensions "${ENABLED_EXTENSIONS%?}, '$2']" &&
+      echo "[$1] Extension enabled (you may have to restart GNOME Shell)"; } ||
+    echo "[$1] The extension is already enabled"
+}
+
+extract_extension() {
+    mkdir -p "$EXTENSIONS_PATH/$2"
+    echo "[$1] Extracting extension"
+    unzip -qq -o "/tmp/shell-extension-install.$3.zip" -d "$EXTENSIONS_PATH/$2"
+    rm -f "/tmp/shell-extension-install.$3.zip"
+}
+
+extract_info() {
+    EXTENSION_NAME=$( echo "$1" | sed 's/^.*name[\": ]*\([^\"]*\).*$/\1/' )
+    EXTENSION_UUID=$( echo "$1" | sed 's/^.*uuid[\": ]*\([^\"]*\).*$/\1/' )
+    EXTENSION_URL=$( echo "$1" | grep "download_url" | sed 's/^.*download_url[\": ]*\([^\"]*\).*$/\1/' )
+    [ "$EXTENSION_URL" ] ||
+    { echo "[$EXTENSION_NAME] Extension not available for GNOME Shell $2"
+      get_available_versions "$1" "$3"
+      return 1; }
+}
+
+main_program() {
+    echo "[$2] Obtaining extension info"
+    EXTENSION_INFO=$( curl -fs "$EXTENSIONS_SITE/extension-info/?pk=$2&shell_version=$1" )
+    case "$?" in
+        0)
+            extract_info "$EXTENSION_INFO" "$1" "$2" &&
+            { echo "[$EXTENSION_NAME] Downloading extension"
+              if wget $DOWNLOAD_PARAMETERS -O "/tmp/shell-extension-install.$2.zip" "$EXTENSIONS_SITE$EXTENSION_URL"; then
+                  extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$2" &&
+                  enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
+              else
+                  echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
+              fi; }
+            ;;
+        22)
+            echo -e "\e[0;31mERROR\e[0m: The extension $2 could not be found" >&2
+            ;;
+        *)
+            echo -e "\e[0;31mERROR\e[0m: Failed to obtain extension info" >&2
+            ;;
+    esac
+}
+
+GNOME_VERSION=$( gnome-shell --version )
+set "${GNOME_VERSION:12}" "$@"
+
+DOWNLOAD_PARAMETERS="--quiet"
+EXTENSIONS_SITE="https://extensions.gnome.org"
+EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
+
+COUNTER="$#"
+while [ $COUNTER -gt 0 ]; do
+    case "$1" in
+        -h | --help)
+            usage_guide
+            exit 1
+            ;;
+        3.[0-9.]*)
+            TARGET_VERSION="$1"
+            shift
+            (( COUNTER -= 1 ))
+            ;;
+        [0-9]*)
+            set "$@" "$1"
+            shift
+            (( COUNTER -= 1 ))
+            ;;
+        -*)
+            echo -e "`basename $0`: unrecognized option '$1'\n" >&2
+            usage_guide
+            exit 1
+            ;;
+        *)
+            echo "`basename $0`: '$1' is not a valid Extension ID" >&2
+            exit 1
+            ;;
+    esac
+done
+
+for EXTENSION_ID in "$@"; do
+    main_program "$TARGET_VERSION" "$EXTENSION_ID"
+done
