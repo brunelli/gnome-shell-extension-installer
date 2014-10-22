@@ -1,7 +1,7 @@
 GNOME Shell Extension Installer
 ===============================
 
-A bash script to install extensions from extensions.gnome.org
+A bash script to install extensions from [extensions.gnome.org](https://extensions.gnome.org/)
 
 ## Help
 
