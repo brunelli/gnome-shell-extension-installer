@@ -4,7 +4,7 @@
  #                                                                         #
  #                     GNOME Shell Extension Installer                     #
  #                                                                         #
- #   Version: 1.2 (23/10/2014)                                             #
+ #   Version: 1.2.2 (23/10/2014)                                           #
  #   Author: Ian Brunelli <ian@brunelli.me>                                #
  #   URL: https://github.com/ianbrunelli/gnome-shell-extension-installer   #
  #                                                                         #
@@ -101,7 +101,8 @@ extract_extension() {
 extract_info() {
     EXTENSION_NAME=$( sed 's/^.*\"name\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
     EXTENSION_DESCRIPTION=$( sed 's/^.*\"description\": \"//g' <<< "${EXTENSIONS_QUERY[$n]}" |
-		                     sed 's/\", \"creator\".*$//g' )
+		                     sed 's/\", \"creator\".*$//g' |
+        			         sed 's/\\\"/\"/g' )
     EXTENSION_CREATOR=$( sed 's/^.*\"creator\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
     EXTENSION_UUID=$( sed 's/^.*\"uuid\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
     EXTENSION_ID=$( sed 's/^.*\"pk\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$1" )
@@ -113,6 +114,9 @@ extract_info() {
 }
 
 download_info() {
+	unset EXTENSION_INFO EXTENSIONS_QUERY
+	PAGES=-1
+	TOTAL=0
     EXTENSION_INFO=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
     case "$?" in
         0)
@@ -140,12 +144,13 @@ search_help() {
             "\nl<number(s)>\tGet link(s) on extensions.gnome.org" \
             "\np<number>\tGo to page" \
             "\n/<string>\tPerform another search" \
+            "\nr\t\tPrint the search content again" \
             "\nhelp\t\tShow this message" \
             "\nexit\t\tExit search shell"
 }
 
-interactive_search() {
-    PAGES=$( sed 's/^.*numpages[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
+load_content() {
+	PAGES=$( sed 's/^.*numpages[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
     TOTAL=$( sed 's/^.*total[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
     echo -e "Displaying $TOTAL item(s). Page $PAGE_NUM of $PAGES.\n"
     IFS=$'\n' read -d '' -r -a EXTENSIONS_QUERY <<< "$( echo $EXTENSION_INFO | cut -f1 --complement -d"[" | sed 's/{[\"]*shell_version_map[\"]*:/\n/g' )"
@@ -157,8 +162,10 @@ interactive_search() {
                 "\n   Versions: ${EXTENSION_VERSIONS[@]}"
         (( COUNTER++ ))
     done
+}
 
-    unset EXIT
+interactive_search() {
+    load_content
     echo -e "\nType \"help\" to get information on how to use the search."
     while [ ! "$EXIT" ]; do
         echo -n "Enter a command: "
@@ -166,7 +173,7 @@ interactive_search() {
         case "$COMMAND" in
             [0-9]*)
                 for n in "$COMMAND"; do
-                    if extract_info "${EXTENSIONS_QUERY[$n]}"; then
+                    if extract_info "${EXTENSIONS_QUERY[$n]}" && [ $n -lt $TOTAL ]; then
                         select_version "[$EXTENSION_NAME] "
                         install_version "${EXTENSIONS_QUERY[$n]}" "$SELECTED_VERSION"
                     else
@@ -176,7 +183,7 @@ interactive_search() {
                 ;;
             d[0-9]*)
                 for n in ${COMMAND:1}; do
-                	if [ ${COMMAND:1} -lt $TOTAL ]; then
+                	if [ $n -lt $TOTAL ]; then
                 	    extract_info "${EXTENSIONS_QUERY[$n]}"
                 		echo -e "[$EXTENSION_NAME]"
 			            echo -e "$EXTENSION_DESCRIPTION"
@@ -186,11 +193,15 @@ interactive_search() {
                 done
                 ;;
             l[0-9]*)
-                for n in ${COMMAND:1}; do
-                    extract_info "${EXTENSIONS_QUERY[$n]}" &&
-                    echo "[$EXTENSION_NAME] $EXTENSIONS_SITE$EXTENSION_LINK" ||
-                    echo "[$n] Invalid number" >&2
-                done
+                if [ ${COMMAND:1} -lt $TOTAL ]; then
+		            for n in ${COMMAND:1}; do
+		                extract_info "${EXTENSIONS_QUERY[$n]}" &&
+		                echo "[$EXTENSION_NAME] $EXTENSIONS_SITE$EXTENSION_LINK" ||
+		                echo "[$n] Invalid number" >&2
+		            done
+                else
+                        echo "[$n] Invalid number" >&2
+                    fi
                 ;;
             p[0-9]*)
                 if [ ${COMMAND:1} -le $PAGES ]; then
@@ -200,8 +211,7 @@ interactive_search() {
                                   "No items to display" \
                                   "The page $PAGE_NUM" \
                                   "Failed to obtain page info" &&
-                    interactive_search
-                    EXIT=1
+                    load_content
                 else
                     echo "[${COMMAND:1}] Invalid page number" >&2
                 fi
@@ -209,8 +219,12 @@ interactive_search() {
             h | help)
                 search_help
                 ;;
+            r)
+                [ $TOTAL -gt 0 ] &&
+                load_content
+                ;;
             exit)
-                EXIT=1
+                exit
                 ;;
             /*)
                 if [ "${COMMAND:1}" ]; then
@@ -220,8 +234,7 @@ interactive_search() {
                                   "No items to display" \
                                   "The search page for \"$SEARCH_STRING\"" \
                                   "Failed to obtain page info" &&
-                    interactive_search
-                    EXIT=1
+                    load_content
                 else
                     echo "No search string specified" >&2
                 fi
