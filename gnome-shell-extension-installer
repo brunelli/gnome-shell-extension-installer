@@ -171,9 +171,11 @@ interactive_search() {
             d[0-9]*)
                 for n in ${COMMAND:1}; do
                 	if [ ${COMMAND:1} -lt $TOTAL ]; then
-		                echo -e "[$EXTENSION_NAME]\n${EXTENSIONS_QUERY[$n]}" |
-		                	sed 's/^.*\"description\": \"//' |
-		                	sed 's/\", \"creator\".*$//'
+                	    extract_info "${EXTENSIONS_QUERY[$n]}"
+                		echo -e "[$EXTENSION_NAME]"
+		                echo -e "${EXTENSIONS_QUERY[$n]}" |
+		                	sed 's/^.*\"description\": \"//g' |
+		                	sed 's/\", \"creator\".*$//g'
                     else
                         echo "[$n] Invalid number" >&2
                     fi
