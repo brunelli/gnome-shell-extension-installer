@@ -177,7 +177,7 @@ interactive_search() {
                         select_version "[$EXTENSION_NAME] "
                         install_version "${EXTENSIONS_QUERY[$n]}" "$SELECTED_VERSION"
                     else
-                        echo "[$n] Invalid number" >&2
+                        echo "[$n] Invalid extension number" >&2
                     fi
                 done
                 ;;
@@ -188,7 +188,7 @@ interactive_search() {
                         echo -e "[$EXTENSION_NAME]"
                         echo -e "$EXTENSION_DESCRIPTION"
                     else
-                        echo "[$n] Invalid number" >&2
+                        echo "[$n] Invalid extension number" >&2
                     fi
                 done
                 ;;
@@ -197,10 +197,10 @@ interactive_search() {
                     for n in ${COMMAND:1}; do
                         extract_info "${EXTENSIONS_QUERY[$n]}" &&
                         echo "[$EXTENSION_NAME] $EXTENSIONS_SITE$EXTENSION_LINK" ||
-                        echo "[$n] Invalid number" >&2
+                        echo "[$n] Invalid extension number" >&2
                     done
                 else
-                        echo "[$n] Invalid number" >&2
+                        echo "[$n] Invalid extension number" >&2
                     fi
                 ;;
             p[0-9]*)
@@ -305,9 +305,9 @@ while [ $COUNTER -gt 0 ]; do
         shift
         (( COUNTER -= 1 ))
     elif [[ $1 =~ ^- ]]; then
-            echo -e "`basename $0`: unrecognized option '$1'\n" >&2
-            usage_guide
-            exit 1
+        echo -e "`basename $0`: unrecognized option '$1'\n" >&2
+        usage_guide
+        exit 1
 	else
         echo "`basename $0`: '$1' is not a valid Extension ID" >&2
         exit 1
