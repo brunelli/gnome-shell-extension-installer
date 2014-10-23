@@ -65,6 +65,7 @@ select_version() {
             echo "${EXTENSION_VERSIONS[0]}"
             SELECTED_VERSION="${EXTENSION_VERSIONS[0]}"
         fi
+        echo "Available versions: ${EXTENSION_VERSIONS[@]}"
     done
 }
 
