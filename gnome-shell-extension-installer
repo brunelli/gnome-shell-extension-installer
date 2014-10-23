@@ -13,7 +13,7 @@
 usage_guide() {
     echo -e "Usage: `basename $0` EXTENSION_ID [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]\n" \
             "\nOptions:" \
-            "\n  -s or --search \"STRING\"\tSearch for extensions matching STRING." \
+            "\n  -s or --search \"STRING\"\tInteractive search for extensions matching STRING." \
             "\n  --yes \t\t\tSkip all prompts (don't affect search mode)." \
             "\n  -h or --help \t\t\tPrint this message.\n" \
             "\nUsage examples:" \
@@ -39,33 +39,33 @@ check_version_validation() {
 }
 
 install_version() {
-	DOWNLOAD_TARGET=$( sed "s/^.*$2\": {\"pk[\": ]*\([^\"]*\),.*$/\1/" <<< "$1" )
-	echo "[$EXTENSION_NAME] Downloading extension"
-	if wget $DOWNLOAD_PARAMETERS -O "/tmp/shell-extension-install.$2.zip" \
-		  "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET";
-	then
-	  extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
-	  enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
-	else
-	  echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
-	fi
+    DOWNLOAD_TARGET=$( sed "s/^.*$2\": {\"pk[\": ]*\([^\"]*\),.*$/\1/" <<< "$1" )
+    echo "[$EXTENSION_NAME] Downloading extension"
+    if wget $DOWNLOAD_PARAMETERS -O "/tmp/shell-extension-install.$EXTENSION_ID.zip" \
+          "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET";
+    then
+      extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
+      enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
+    else
+      echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
+    fi
 }
 
 select_version() {
-	unset SELECTED_VERSION
-	while [ ! "$SELECTED_VERSION" ]; do
-		echo -n $1"Type a version to install: "
-		if [ ! $SKIP_PROMPTS ]; then
-			read INPUT
-			for VERSION in ${EXTENSION_VERSIONS[@]}; do
-				[ "$INPUT" == "$VERSION" ] &&
-				SELECTED_VERSION="$INPUT"
-			done
-		else
-			echo "${EXTENSION_VERSIONS[0]}"
-			SELECTED_VERSION="${EXTENSION_VERSIONS[0]}"
-		fi
-	done
+    unset SELECTED_VERSION
+    while [ ! "$SELECTED_VERSION" ]; do
+        echo -n $1"Type a version to install: "
+        if [ ! $SKIP_PROMPTS ]; then
+            read INPUT
+            for VERSION in ${EXTENSION_VERSIONS[@]}; do
+                [ "$INPUT" == "$VERSION" ] &&
+                SELECTED_VERSION="$INPUT"
+            done
+        else
+            echo "${EXTENSION_VERSIONS[0]}"
+            SELECTED_VERSION="${EXTENSION_VERSIONS[0]}"
+        fi
+    done
 }
 
 get_other_version() {
@@ -103,36 +103,119 @@ extract_info() {
     EXTENSION_DESCRIPTION=$( sed 's/^.*description[\": ]*\([^\"]*\).*$/\1/' <<< "$1" )
     EXTENSION_UUID=$( sed 's/^.*uuid[\": ]*\([^\"]*\).*$/\1/' <<< "$1" )
     EXTENSION_ID=$( sed 's/^.*pk[\": ]*\([^\"]*\),.*$/\1/' <<< "$1" )
+    EXTENSION_LINK=$( sed 's/^.*link[\": ]*\([^\"]*\).*$/\1/' <<< "$1" )
     EXTENSION_URL=$( grep "download_url" <<< "$1" | sed 's/^.*download_url[\": ]*\([^\"]*\).*$/\1/' )
     EXTENSION_VERSIONS=($( sed 's/[\"]*:[ ]*{[\"]*pk[\"]*:/\n/g' <<< "$1" | sed '$ d' | sed 's/^.*\"//g' | sort -Vr ))
 }
 
-main_program() {
-    echo "[$EXTENSION_ID] Obtaining extension info"
-    EXTENSION_INFO=$( curl -fs "$EXTENSIONS_SITE/extension-info/?pk=$EXTENSION_ID&shell_version=$1" )
+interactive_search() {
+    PAGES=$( sed 's/^.*numpages[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
+    TOTAL=$( sed 's/^.*total[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
+    echo -e "Displaying $TOTAL item(s). Page $PAGE_NUM of $PAGES.\n"
+    IFS=$'\n' read -d '' -r -a EXTENSIONS_QUERY <<< "$( echo $EXTENSION_INFO | cut -f1 --complement -d"[" | sed 's/{[\"]*shell_version_map[\"]*:/\n/g' )"
+
+    COUNTER=0
+    for EXTENSION in "${EXTENSIONS_QUERY[@]}"; do
+        extract_info "$EXTENSION"
+        echo -e "$COUNTER: $EXTENSION_NAME, by $EXTENSION_CREATOR" \
+                "\n   Versions: ${EXTENSION_VERSIONS[@]}"
+        (( COUNTER++ ))
+    done
+
+    unset EXIT
+    echo -e "\nType \"help\" to get information on how to use the search."
+    while [ ! "$EXIT" ]; do
+        echo -n "Enter a command: "
+        read COMMAND
+        case "$COMMAND" in
+            [0-9]*)
+                for n in "$COMMAND"; do
+                    if extract_info "${EXTENSIONS_QUERY[$n]}"; then
+                        select_version "[$EXTENSION_NAME] "
+                        install_version "${EXTENSIONS_QUERY[$n]}" "$SELECTED_VERSION"
+                    else
+                        echo "[$n] Invalid number" >&2
+                    fi
+                done
+                ;;
+            d[0-9]*)
+                for n in ${COMMAND:1}; do
+                    extract_info "${EXTENSIONS_QUERY[$n]}" &&
+                    echo "[$EXTENSION_NAME] $EXTENSION_DESCRIPTION" ||
+                    echo "[$n] Invalid number" >&2
+                done
+                ;;
+            l[0-9]*)
+                for n in ${COMMAND:1}; do
+                    extract_info "${EXTENSIONS_QUERY[$n]}" &&
+                    echo "[$EXTENSION_NAME] $EXTENSIONS_SITE$EXTENSION_LINK" ||
+                    echo "[$n] Invalid number" >&2
+                done
+                ;;
+            p[0-9])
+                if [ ${COMMAND:1} -le $PAGES ]; then
+                    PAGE_NUM="${COMMAND:1}"
+                    echo "[$SEARCH_STRING] Obtaining page $PAGE_NUM"
+                    download_info "/extension-query/?search=$SEARCH_STRING&page=$PAGE_NUM" \
+                                  "The page $PAGE_NUM" \
+                                  "Failed to obtain page info" &&
+                    interactive_search
+                    EXIT=1
+                else
+                    echo "[${COMMAND:1}] Invalid page number" >&2
+                fi
+                ;;
+            h | help)
+                echo -e "<number(s)>:\tInstall extension(s)" \
+                        "\nd<number(s)>:\tGet description(s)" \
+                        "\nl<number(s)>:\tGet link(s) on extensions.gnome.org"\
+                        "\np<number>:\tGo to page"
+                ;;
+            exit)
+                EXIT=1
+                ;;
+            *)
+                echo "Unknown command. Type h for help."
+                ;;
+        esac
+    done
+}
+
+download_info() {
+    EXTENSION_INFO=$( curl -fs "$EXTENSIONS_SITE$1" )
     case "$?" in
         0)
-            extract_info "$EXTENSION_INFO"
-            if [ "$EXTENSION_URL" ]; then
-		        echo "[$EXTENSION_NAME] Downloading extension"
-		        if wget $DOWNLOAD_PARAMETERS -O "/tmp/shell-extension-install.$EXTENSION_ID.zip" "$EXTENSIONS_SITE$EXTENSION_URL"; then
-		            extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
-		            enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
-		        else
-		            echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
-		        fi
-		    else
-		        echo "[$EXTENSION_NAME] Extension not available for GNOME Shell $1"
-                get_other_version "$1"
-            fi
+            return 0
             ;;
         22)
-            echo -e "\e[0;31mERROR\e[0m: The extension $EXTENSION_ID could not be found" >&2
+            echo -e "\e[0;31mERROR\e[0m: $2 could not be found" >&2
+            return 22
             ;;
         *)
-            echo -e "\e[0;31mERROR\e[0m: Failed to obtain extension info" >&2
+            echo -e "\e[0;31mERROR\e[0m: $3 (curl error $?)" >&2
+            return 1
             ;;
     esac
+}
+
+main_program() {
+    echo "[$EXTENSION_ID] Obtaining extension info"
+    download_info "/extension-info/?pk=$EXTENSION_ID&shell_version=$1" \
+                  "The extension $EXTENSION_ID" \
+                  "Failed to obtain extension info" &&
+    { extract_info "$EXTENSION_INFO"
+      if [ "$EXTENSION_URL" ]; then
+          echo "[$EXTENSION_NAME] Downloading extension"
+          if wget $DOWNLOAD_PARAMETERS -O "/tmp/shell-extension-install.$EXTENSION_ID.zip" "$EXTENSIONS_SITE$EXTENSION_URL"; then
+              extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
+              enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
+          else
+              echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
+          fi
+      else
+          echo "[$EXTENSION_NAME] Extension not available for GNOME Shell $1"
+          get_other_version "$1"
+      fi; }
 }
 
 GNOME_VERSION=$( gnome-shell --version )
@@ -150,10 +233,20 @@ while [ $COUNTER -gt 0 ]; do
             exit 0
             ;;
         -s | --search)
-            shift
             unset SKIP_PROMPTS
-            search_extensions "$1"
-            exit 0
+            SEARCH_STRING="$2"
+            PAGE_NUM="1"
+            if [ "$SEARCH_STRING" ]; then
+                echo "[$SEARCH_STRING] Performing search"
+                download_info "/extension-query/?search=${SEARCH_STRING// /%20}&page=1" \
+                               "The search page for \"$SEARCH_STRING\"" \
+                              "Failed to obtain page info" &&
+                interactive_search
+                exit
+            else
+                echo "`basename $0`: no search string specified" >&2
+                exit 1
+            fi
             ;;
         --yes )
             SKIP_PROMPTS=1
