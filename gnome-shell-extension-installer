@@ -171,9 +171,13 @@ interactive_search() {
                 ;;
             d[0-9]*)
                 for n in ${COMMAND:1}; do
-                    extract_info "${EXTENSIONS_QUERY[$n]}" &&
-                    echo "[$EXTENSION_NAME] $EXTENSION_DESCRIPTION" ||
-                    echo "[$n] Invalid number" >&2
+                	if [ ${COMMAND:1} -lt $TOTAL ]; then
+		                extract_info "${EXTENSIONS_QUERY[$n]}" &&
+		                echo -e "[$EXTENSION_NAME]\n$EXTENSION_DESCRIPTION" ||
+		                echo "[$n] Invalid number" >&2
+                    else
+                        echo "[$n] Invalid number" >&2
+                    fi
                 done
                 ;;
             l[0-9]*)
