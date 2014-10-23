@@ -4,7 +4,7 @@
  #                                                                         #
  #                     GNOME Shell Extension Installer                     #
  #                                                                         #
- #   Version: 1.0 (22/10/2014)                                             #
+ #   Version: 1.1 (23/10/2014)                                             #
  #   Author: Ian Brunelli                                                  #
  #   URL: https://github.com/ianbrunelli/gnome-shell-extension-installer   #
  #                                                                         #
@@ -12,12 +12,15 @@
 
 usage_guide() {
     echo -e "Usage: `basename $0` EXTENSION_ID [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]\n" \
-            "\nOptions:"\
-            "\n  --yes \t\tSkip all prompts (don't affect search mode)."\
-            "\n  -h or --help \t\tPrint this message.\n" \
-            "\nUsage example:"\
-            "\n  `basename $0` 861 3.12 --yes"\
-            "\n  # Installs \"Small Panel Icon\" for GNOME Shell 3.12 answering yes to all questions."
+            "\nOptions:" \
+            "\n  -s or --search \"STRING\"\tSearch for extensions matching STRING." \
+            "\n  --yes \t\t\tSkip all prompts (don't affect search mode)." \
+            "\n  -h or --help \t\t\tPrint this message.\n" \
+            "\nUsage examples:" \
+            "\n  # Install \"Small Panel Icon\" for GNOME Shell 3.12 answering yes to all questions:" \
+            "\n  `basename $0` 861 3.12 --yes\n" \
+            "\n  # Search for extensions matching \"User Themes\":" \
+            "\n  `basename $0` -s \"User Themes\""
 }
 
 check_version_validation() {
@@ -37,7 +40,7 @@ check_version_validation() {
 
 install_version() {
 	DOWNLOAD_TARGET=$( sed "s/^.*$2\": {\"pk[\": ]*\([^\"]*\),.*$/\1/" <<< "$1" )
-	echo -e "\n[$EXTENSION_NAME] Downloading extension"
+	echo "[$EXTENSION_NAME] Downloading extension"
 	if wget $DOWNLOAD_PARAMETERS -O "/tmp/shell-extension-install.$2.zip" \
 		  "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET";
 	then
@@ -48,26 +51,31 @@ install_version() {
 	fi
 }
 
+select_version() {
+	unset SELECTED_VERSION
+	while [ ! "$SELECTED_VERSION" ]; do
+		echo -n $1"Type a version to install: "
+		if [ ! $SKIP_PROMPTS ]; then
+			read INPUT
+			for VERSION in ${EXTENSION_VERSIONS[@]}; do
+				[ "$INPUT" == "$VERSION" ] &&
+				SELECTED_VERSION="$INPUT"
+			done
+		else
+			echo "${EXTENSION_VERSIONS[0]}"
+			SELECTED_VERSION="${EXTENSION_VERSIONS[0]}"
+		fi
+	done
+}
+
 get_other_version() {
     [ "$EXTENSION_VERSIONS" ] &&
     { echo -e "\nThis extension is available for the following versions of GNOME Shell:"
       for VERSION in ${EXTENSION_VERSIONS[@]}; do
           echo "- $VERSION"
       done
-      unset SELECTED_VERSION
-      while [ ! "$SELECTED_VERSION" ]; do
-          echo -n "Type a version to install: "
-          if [ ! $SKIP_PROMPTS ]; then
-              read INPUT
-              for VERSION in ${EXTENSION_VERSIONS[@]}; do
-                  [ "$INPUT" == "$VERSION" ] &&
-                  SELECTED_VERSION="$INPUT"
-              done
-          else
-              echo "${EXTENSION_VERSIONS[0]}"
-              SELECTED_VERSION="${EXTENSION_VERSIONS[0]}"
-          fi
-      done; }
+      select_version; }
+    echo
     [ "$SELECTED_VERSION" ] &&
     check_version_validation &&
     install_version "$1" "$SELECTED_VERSION"
@@ -96,7 +104,7 @@ extract_info() {
     EXTENSION_UUID=$( sed 's/^.*uuid[\": ]*\([^\"]*\).*$/\1/' <<< "$1" )
     EXTENSION_ID=$( sed 's/^.*pk[\": ]*\([^\"]*\),.*$/\1/' <<< "$1" )
     EXTENSION_URL=$( grep "download_url" <<< "$1" | sed 's/^.*download_url[\": ]*\([^\"]*\).*$/\1/' )
-    EXTENSION_VERSIONS=($( sed 's/[\"]*:[ ]*{[\"]*pk[\"]*:/\n/g' <<< "$1" | sed '$ d' | sed 's/^.*\"//g' | sort -rn ))
+    EXTENSION_VERSIONS=($( sed 's/[\"]*:[ ]*{[\"]*pk[\"]*:/\n/g' <<< "$1" | sed '$ d' | sed 's/^.*\"//g' | sort -Vr ))
 }
 
 main_program() {
@@ -139,6 +147,12 @@ while [ $COUNTER -gt 0 ]; do
     case "$1" in
         -h | --help)
             usage_guide
+            exit 0
+            ;;
+        -s | --search)
+            shift
+            unset SKIP_PROMPTS
+            search_extensions "$1"
             exit 0
             ;;
         --yes )
