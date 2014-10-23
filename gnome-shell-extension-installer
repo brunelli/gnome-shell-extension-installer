@@ -41,8 +41,8 @@ check_version_validation() {
 install_version() {
     DOWNLOAD_TARGET=$( sed "s/^.*$2\": {\"pk[\": ]*\([^\"]*\),.*$/\1/" <<< "$1" )
     echo "[$EXTENSION_NAME] Downloading extension"
-    if wget $DOWNLOAD_PARAMETERS -O "/tmp/shell-extension-install.$EXTENSION_ID.zip" \
-          "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET";
+    if curl $DOWNLOAD_PARAMETERS -o "/tmp/shell-extension-install.$EXTENSION_ID.zip" \
+            "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET";
     then
       extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
       enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
@@ -182,7 +182,7 @@ interactive_search() {
 }
 
 download_info() {
-    EXTENSION_INFO=$( curl -fs "$EXTENSIONS_SITE$1" )
+    EXTENSION_INFO=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
     case "$?" in
         0)
             return 0
@@ -206,7 +206,7 @@ main_program() {
     { extract_info "$EXTENSION_INFO"
       if [ "$EXTENSION_URL" ]; then
           echo "[$EXTENSION_NAME] Downloading extension"
-          if wget $DOWNLOAD_PARAMETERS -O "/tmp/shell-extension-install.$EXTENSION_ID.zip" "$EXTENSIONS_SITE$EXTENSION_URL"; then
+          if curl $DOWNLOAD_PARAMETERS -o "/tmp/shell-extension-install.$EXTENSION_ID.zip" "$EXTENSIONS_SITE$EXTENSION_URL"; then
               extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
               enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
           else
@@ -221,7 +221,7 @@ main_program() {
 GNOME_VERSION=$( gnome-shell --version )
 set "${GNOME_VERSION:12}" "$@"
 
-DOWNLOAD_PARAMETERS="--quiet"
+DOWNLOAD_PARAMETERS="-Lfs"
 EXTENSIONS_SITE="https://extensions.gnome.org"
 EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
 
