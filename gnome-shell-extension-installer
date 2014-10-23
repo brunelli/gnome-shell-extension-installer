@@ -157,7 +157,7 @@ interactive_search() {
                     PAGE_NUM="${COMMAND:1}"
                     echo "[$SEARCH_STRING] Obtaining page $PAGE_NUM"
                     download_info "/extension-query/?search=$SEARCH_STRING&page=$PAGE_NUM" \
-                                  "No items found" \
+                                  "No items to display" \
                                   "The page $PAGE_NUM" \
                                   "Failed to obtain page info" &&
                     interactive_search
@@ -174,6 +174,20 @@ interactive_search() {
                 ;;
             exit)
                 EXIT=1
+                ;;
+            /*)
+                if [ "${COMMAND:1}" ]; then
+                    SEARCH_STRING="${COMMAND:1}"
+                    echo "[$SEARCH_STRING] Performing search"
+                    download_info "/extension-query/?search=$SEARCH_STRING&page=1" \
+                                  "No items to display" \
+                                  "The search page for \"$SEARCH_STRING\"" \
+                                  "Failed to obtain page info" &&
+                    interactive_search
+                    EXIT=1
+                else
+                    echo "No search string specified" >&2
+                fi
                 ;;
             *)
                 echo "Unknown command. Type h for help."
@@ -246,7 +260,7 @@ while [ $COUNTER -gt 0 ]; do
             if [ "$SEARCH_STRING" ]; then
                 echo "[$SEARCH_STRING] Performing search"
                 download_info "/extension-query/?search=${SEARCH_STRING// /%20}&page=1" \
-                              "No items found" \
+                              "No items to display" \
                               "The search page for \"$SEARCH_STRING\"" \
                               "Failed to obtain page info" &&
                 interactive_search
