@@ -131,6 +131,14 @@ download_info() {
     esac
 }
 
+search_help() {
+    echo -e "<number(s)>:\tInstall extension(s)" \
+            "\nd<number(s)>:\tGet description(s)" \
+            "\nl<number(s)>:\tGet link(s) on extensions.gnome.org" \
+            "\np<number>:\tGo to page" \
+            "\n/<string>:\tPerform another search"
+}
+
 interactive_search() {
     PAGES=$( sed 's/^.*numpages[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
     TOTAL=$( sed 's/^.*total[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
@@ -190,10 +198,7 @@ interactive_search() {
                 fi
                 ;;
             h | help)
-                echo -e "<number(s)>:\tInstall extension(s)" \
-                        "\nd<number(s)>:\tGet description(s)" \
-                        "\nl<number(s)>:\tGet link(s) on extensions.gnome.org"\
-                        "\np<number>:\tGo to page"
+                search_help
                 ;;
             exit)
                 EXIT=1
