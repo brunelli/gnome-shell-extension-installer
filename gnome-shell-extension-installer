@@ -116,7 +116,7 @@ extract_info() {
 download_info() {
     unset EXTENSION_INFO EXTENSIONS_QUERY
     PAGES=-1
-    TOTAL=0
+    TOTAL=-1
     EXTENSION_INFO=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
     case "$?" in
         0)
@@ -145,7 +145,7 @@ search_help() {
             "\np<number>\tGo to page" \
             "\n/<string>\tPerform another search" \
             "\nr\t\tPrint the search content again" \
-            "\nhelp\t\tShow this message" \
+            "\nh or help\tShow this message" \
             "\nexit\t\tExit search shell"
 }
 
@@ -170,79 +170,69 @@ interactive_search() {
     while [ ! "$EXIT" ]; do
         echo -n "Enter a command: "
         read COMMAND
-        case "$COMMAND" in
-            [0-9]*)
-                for n in "$COMMAND"; do
-                    if extract_info "${EXTENSIONS_QUERY[$n]}" && [ $n -lt $TOTAL ]; then
-                        select_version "[$EXTENSION_NAME] "
-                        install_version "${EXTENSIONS_QUERY[$n]}" "$SELECTED_VERSION"
-                    else
-                        echo "[$n] Invalid extension number" >&2
-                    fi
-                done
-                ;;
-            d[0-9]*)
-                for n in ${COMMAND:1}; do
-                    if [ $n -lt $TOTAL ]; then
-                        extract_info "${EXTENSIONS_QUERY[$n]}"
-                        echo -e "[$EXTENSION_NAME]"
-                        echo -e "$EXTENSION_DESCRIPTION"
-                    else
-                        echo "[$n] Invalid extension number" >&2
-                    fi
-                done
-                ;;
-            l[0-9]*)
-                if [ ${COMMAND:1} -lt $TOTAL ]; then
-                    for n in ${COMMAND:1}; do
-                        extract_info "${EXTENSIONS_QUERY[$n]}" &&
-                        echo "[$EXTENSION_NAME] $EXTENSIONS_SITE$EXTENSION_LINK" ||
-                        echo "[$n] Invalid extension number" >&2
-                    done
+        if [[ $COMMAND =~ ^([0-9] )+$ ]]; then
+            for n in "$COMMAND"; do
+                if extract_info "${EXTENSIONS_QUERY[$n]}" && [ $n -lt $TOTAL ]; then
+                    select_version "[$EXTENSION_NAME] "
+                    install_version "${EXTENSIONS_QUERY[$n]}" "$SELECTED_VERSION"
                 else
-                        echo "[$n] Invalid extension number" >&2
-                    fi
-                ;;
-            p[0-9]*)
-                if [ ${COMMAND:1} -le $PAGES ]; then
-                    PAGE_NUM="${COMMAND:1}"
-                    echo "[$SEARCH_STRING] Obtaining page $PAGE_NUM"
-                    download_info "/extension-query/?search=$SEARCH_STRING&page=$PAGE_NUM" \
-                                  "No items to display" \
-                                  "The page $PAGE_NUM" \
-                                  "Failed to obtain page info" &&
-                    load_content
-                else
-                    echo "[${COMMAND:1}] Invalid page number" >&2
+                    echo "[$n] Invalid extension number" >&2
                 fi
-                ;;
-            h | help)
-                search_help
-                ;;
-            r)
-                [ $TOTAL -gt 0 ] &&
+            done
+        elif [[ $COMMAND =~ ^d([0-9 ])+$ ]]; then
+            for n in ${COMMAND:1}; do
+                if [ $n -lt $TOTAL ]; then
+                    extract_info "${EXTENSIONS_QUERY[$n]}"
+                    echo -e "[$EXTENSION_NAME]"
+                    echo -e "$EXTENSION_DESCRIPTION"
+                else
+                    echo "[$n] Invalid extension number" >&2
+                fi
+            done
+        elif [[ $COMMAND =~ ^l([0-9 ])+$ ]]; then
+            for n in ${COMMAND:1}; do
+                if [ $n -lt $TOTAL ]; then
+                    extract_info "${EXTENSIONS_QUERY[$n]}" &&
+                    echo "[$EXTENSION_NAME] $EXTENSIONS_SITE$EXTENSION_LINK" ||
+                    echo "[$n] Invalid extension number" >&2
+                else
+                    echo "[$n] Invalid extension number" >&2
+                fi
+            done
+        elif [[ $COMMAND =~ ^p([0-9 ])+$ ]]; then
+            if [ ${COMMAND:1} -le $PAGES ]; then
+                PAGE_NUM="${COMMAND:1}"
+                echo "[$SEARCH_STRING] Obtaining page $PAGE_NUM"
+                download_info "/extension-query/?search=$SEARCH_STRING&page=$PAGE_NUM" \
+                              "No items to display" \
+                              "The page $PAGE_NUM" \
+                              "Failed to obtain page info" &&
                 load_content
-                ;;
-            exit)
-                exit
-                ;;
-            /*)
-                if [ "${COMMAND:1}" ]; then
-                    SEARCH_STRING="${COMMAND:1}"
-                    echo "[$SEARCH_STRING] Performing search"
-                    download_info "/extension-query/?search=$SEARCH_STRING&page=1" \
-                                  "No items to display" \
-                                  "The search page for \"$SEARCH_STRING\"" \
-                                  "Failed to obtain page info" &&
-                    load_content
-                else
-                    echo "No search string specified" >&2
-                fi
-                ;;
-            *)
-                echo "Unknown command. Type h for help."
-                ;;
-        esac
+            else
+                echo "[${COMMAND:1}] Invalid page number" >&2
+            fi
+        elif [[ $COMMAND =~ ^(h|help)$ ]]; then
+            search_help
+        elif [[ $COMMAND =~ ^r$ ]]; then
+            [ $TOTAL -gt 0 ] &&
+            load_content
+        elif [[ $COMMAND =~ ^exit$ ]]; then
+            exit
+        elif [[ $COMMAND =~ ^/ ]]; then
+            if [ "${COMMAND:1}" ]; then
+                SEARCH_STRING="${COMMAND:1}"
+                echo "[$SEARCH_STRING] Performing search"
+                download_info "/extension-query/?search=$SEARCH_STRING&page=1" \
+                              "No items to display" \
+                              "The search page for \"$SEARCH_STRING\"" \
+                              "Failed to obtain page info" &&
+                load_content
+            else
+                echo "No search string specified" >&2
+            fi
+        else
+            echo "Unknown command. Type h for help." >&2
+        fi
     done
 }
 
@@ -274,12 +264,15 @@ DOWNLOAD_PARAMETERS="-Lfs"
 EXTENSIONS_SITE="https://extensions.gnome.org"
 EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
 
+PAGE=-1
+TOTAL=-1
+
 COUNTER="$#"
 while [ $COUNTER -gt 0 ]; do
-    if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+    if [[ $1 =~ ^-(h|-help)$ ]]; then
         usage_guide
         exit 0
-    elif [ "$1" == "-s" ] || [ "$1" == "--search" ]; then
+    elif [[ $1 =~ ^-(s|-search)$ ]]; then
         unset SKIP_PROMPTS
         SEARCH_STRING="$2"
         PAGE_NUM="1"
@@ -308,10 +301,10 @@ while [ $COUNTER -gt 0 ]; do
         echo -e "`basename $0`: unrecognized option '$1'\n" >&2
         usage_guide
         exit 1
-	else
+    else
         echo "`basename $0`: '$1' is not a valid Extension ID" >&2
         exit 1
-	fi
+    fi
 done
 
 for EXTENSION_ID in "$@"; do
