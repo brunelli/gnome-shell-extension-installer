@@ -5,7 +5,7 @@
  #                     GNOME Shell Extension Installer                     #
  #                                                                         #
  #   Version: 1.0 (22/10/2014)                                             #
- #   Author: Ian Brunelli <ian@brunelli.me>                                #
+ #   Author: Ian Brunelli                                                  #
  #   URL: https://github.com/ianbrunelli/gnome-shell-extension-installer   #
  #                                                                         #
  ###########################################################################
@@ -13,7 +13,7 @@
 usage_guide() {
     echo -e "Usage: `basename $0` EXTENSION_ID [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]\n" \
             "\nOptions:"\
-            "\n  --yes \t\tSkip all prompts (be careful on using this!)."\
+            "\n  --yes \t\tSkip all prompts (don't affect search mode)."\
             "\n  -h or --help \t\tPrint this message.\n" \
             "\nUsage example:"\
             "\n  `basename $0` 861 3.12 --yes"\
@@ -35,11 +35,23 @@ check_version_validation() {
       echo -e "\nThe extension version validation has been disabled."; }
 }
 
-get_available_versions() {
-    AVAILABLE_VERSIONS=($( sed 's/[\"]*:[ ]*{[\"]*pk[\"]*:/\n/g' <<< "$1" | sed '$ d' | sed 's/^.*\"//g' | sort -rn ))
-    [ "$AVAILABLE_VERSIONS" ] &&
+install_version() {
+	DOWNLOAD_TARGET=$( sed "s/^.*$2\": {\"pk[\": ]*\([^\"]*\),.*$/\1/" <<< "$1" )
+	echo -e "\n[$EXTENSION_NAME] Downloading extension"
+	if wget $DOWNLOAD_PARAMETERS -O "/tmp/shell-extension-install.$2.zip" \
+		  "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET";
+	then
+	  extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
+	  enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
+	else
+	  echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
+	fi
+}
+
+get_other_version() {
+    [ "$EXTENSION_VERSIONS" ] &&
     { echo -e "\nThis extension is available for the following versions of GNOME Shell:"
-      for VERSION in ${AVAILABLE_VERSIONS[@]}; do
+      for VERSION in ${EXTENSION_VERSIONS[@]}; do
           echo "- $VERSION"
       done
       unset SELECTED_VERSION
@@ -47,27 +59,18 @@ get_available_versions() {
           echo -n "Type a version to install: "
           if [ ! $SKIP_PROMPTS ]; then
               read INPUT
-              for VERSION in ${AVAILABLE_VERSIONS[@]}; do
+              for VERSION in ${EXTENSION_VERSIONS[@]}; do
                   [ "$INPUT" == "$VERSION" ] &&
                   SELECTED_VERSION="$INPUT"
               done
           else
-              echo "${AVAILABLE_VERSIONS[0]}"
-              SELECTED_VERSION="${AVAILABLE_VERSIONS[0]}"
+              echo "${EXTENSION_VERSIONS[0]}"
+              SELECTED_VERSION="${EXTENSION_VERSIONS[0]}"
           fi
       done; }
     [ "$SELECTED_VERSION" ] &&
     check_version_validation &&
-    { DOWNLOAD_TARGET=$( sed "s/^.*$SELECTED_VERSION\": {\"pk[\": ]*\([^\"]*\),.*$/\1/" <<< "$1" )
-      echo -e "\n[$EXTENSION_NAME] Downloading extension"
-      if wget $DOWNLOAD_PARAMETERS -O "/tmp/shell-extension-install.$2.zip" \
-              "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET";
-      then
-          extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$2" &&
-          enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
-      else
-          echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
-      fi; }
+    install_version "$1" "$SELECTED_VERSION"
 }
 
 enable_extension() {
@@ -87,31 +90,36 @@ extract_extension() {
 }
 
 extract_info() {
-    EXTENSION_NAME=$( echo "$1" | sed 's/^.*name[\": ]*\([^\"]*\).*$/\1/' )
-    EXTENSION_UUID=$( echo "$1" | sed 's/^.*uuid[\": ]*\([^\"]*\).*$/\1/' )
-    EXTENSION_URL=$( echo "$1" | grep "download_url" | sed 's/^.*download_url[\": ]*\([^\"]*\).*$/\1/' )
-    [ "$EXTENSION_URL" ] ||
-    { echo "[$EXTENSION_NAME] Extension not available for GNOME Shell $2"
-      get_available_versions "$1" "$3"
-      return 1; }
+    EXTENSION_NAME=$( sed 's/^.*name[\": ]*\([^\"]*\).*$/\1/' <<< "$1" )
+    EXTENSION_CREATOR=$( sed 's/^.*creator\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
+    EXTENSION_DESCRIPTION=$( sed 's/^.*description[\": ]*\([^\"]*\).*$/\1/' <<< "$1" )
+    EXTENSION_UUID=$( sed 's/^.*uuid[\": ]*\([^\"]*\).*$/\1/' <<< "$1" )
+    EXTENSION_ID=$( sed 's/^.*pk[\": ]*\([^\"]*\),.*$/\1/' <<< "$1" )
+    EXTENSION_URL=$( grep "download_url" <<< "$1" | sed 's/^.*download_url[\": ]*\([^\"]*\).*$/\1/' )
+    EXTENSION_VERSIONS=($( sed 's/[\"]*:[ ]*{[\"]*pk[\"]*:/\n/g' <<< "$1" | sed '$ d' | sed 's/^.*\"//g' | sort -rn ))
 }
 
 main_program() {
-    echo "[$2] Obtaining extension info"
-    EXTENSION_INFO=$( curl -fs "$EXTENSIONS_SITE/extension-info/?pk=$2&shell_version=$1" )
+    echo "[$EXTENSION_ID] Obtaining extension info"
+    EXTENSION_INFO=$( curl -fs "$EXTENSIONS_SITE/extension-info/?pk=$EXTENSION_ID&shell_version=$1" )
     case "$?" in
         0)
-            extract_info "$EXTENSION_INFO" "$1" "$2" &&
-            { echo "[$EXTENSION_NAME] Downloading extension"
-              if wget $DOWNLOAD_PARAMETERS -O "/tmp/shell-extension-install.$2.zip" "$EXTENSIONS_SITE$EXTENSION_URL"; then
-                  extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$2" &&
-                  enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
-              else
-                  echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
-              fi; }
+            extract_info "$EXTENSION_INFO"
+            if [ "$EXTENSION_URL" ]; then
+		        echo "[$EXTENSION_NAME] Downloading extension"
+		        if wget $DOWNLOAD_PARAMETERS -O "/tmp/shell-extension-install.$EXTENSION_ID.zip" "$EXTENSIONS_SITE$EXTENSION_URL"; then
+		            extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
+		            enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
+		        else
+		            echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
+		        fi
+		    else
+		        echo "[$EXTENSION_NAME] Extension not available for GNOME Shell $1"
+                get_other_version "$1"
+            fi
             ;;
         22)
-            echo -e "\e[0;31mERROR\e[0m: The extension $2 could not be found" >&2
+            echo -e "\e[0;31mERROR\e[0m: The extension $EXTENSION_ID could not be found" >&2
             ;;
         *)
             echo -e "\e[0;31mERROR\e[0m: Failed to obtain extension info" >&2
@@ -161,5 +169,5 @@ while [ $COUNTER -gt 0 ]; do
 done
 
 for EXTENSION_ID in "$@"; do
-    main_program "$TARGET_VERSION" "$EXTENSION_ID"
+    main_program "$TARGET_VERSION"
 done
