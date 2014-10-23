@@ -135,11 +135,13 @@ download_info() {
 }
 
 search_help() {
-    echo -e "<number(s)>:\tInstall extension(s)" \
-            "\nd<number(s)>:\tGet description(s)" \
-            "\nl<number(s)>:\tGet link(s) on extensions.gnome.org" \
-            "\np<number>:\tGo to page" \
-            "\n/<string>:\tPerform another search"
+    echo -e "<number(s)>\tInstall extension(s)" \
+            "\nd<number(s)>\tGet description(s)" \
+            "\nl<number(s)>\tGet link(s) on extensions.gnome.org" \
+            "\np<number>\tGo to page" \
+            "\n/<string>\tPerform another search" \
+            "\nhelp\t\tShow this message" \
+            "\nexit\t\tExit search shell"
 }
 
 interactive_search() {
