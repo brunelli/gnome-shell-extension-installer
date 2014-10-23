@@ -4,7 +4,7 @@
  #                                                                         #
  #                     GNOME Shell Extension Installer                     #
  #                                                                         #
- #   Version: 1.1 (23/10/2014)                                             #
+ #   Version: 1.2 (23/10/2014)                                             #
  #   Author: Ian Brunelli                                                  #
  #   URL: https://github.com/ianbrunelli/gnome-shell-extension-installer   #
  #                                                                         #
@@ -108,6 +108,28 @@ extract_info() {
     EXTENSION_VERSIONS=($( sed 's/[\"]*:[ ]*{[\"]*pk[\"]*:/\n/g' <<< "$1" | sed '$ d' | sed 's/^.*\"//g' | sort -rV ))
 }
 
+download_info() {
+    EXTENSION_INFO=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
+    case "$?" in
+        0)
+            if [ "$( echo $EXTENSION_INFO | grep name )" ]; then
+                return 0
+            else
+                echo -e "\e[0;31mERROR\e[0m: $2" >&2
+                return 2
+            fi
+            ;;
+        22)
+            echo -e "\e[0;31mERROR\e[0m: $3 could not be found" >&2
+            return 22
+            ;;
+        *)
+            echo -e "\e[0;31mERROR\e[0m: $4 (curl error $?)" >&2
+            return 1
+            ;;
+    esac
+}
+
 interactive_search() {
     PAGES=$( sed 's/^.*numpages[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
     TOTAL=$( sed 's/^.*total[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
@@ -194,28 +216,6 @@ interactive_search() {
                 ;;
         esac
     done
-}
-
-download_info() {
-    EXTENSION_INFO=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
-    case "$?" in
-        0)
-            if [ "$( echo $EXTENSION_INFO | grep name )" ]; then
-                return 0
-            else
-                echo -e "\e[0;31mERROR\e[0m: $2" >&2
-                return 2
-            fi
-            ;;
-        22)
-            echo -e "\e[0;31mERROR\e[0m: $3 could not be found" >&2
-            return 22
-            ;;
-        *)
-            echo -e "\e[0;31mERROR\e[0m: $4 (curl error $?)" >&2
-            return 1
-            ;;
-    esac
 }
 
 main_program() {
