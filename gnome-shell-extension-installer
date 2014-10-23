@@ -180,9 +180,6 @@ interactive_search() {
                 	    extract_info "${EXTENSIONS_QUERY[$n]}"
                 		echo -e "[$EXTENSION_NAME]"
 			            echo -e "$EXTENSION_DESCRIPTION"
-		                echo -e "${EXTENSIONS_QUERY[$n]}" |
-		                	sed 's/^.*\"description\": \"//g' |
-		                	sed 's/\", \"creator\".*$//g'
                     else
                         echo "[$n] Invalid number" >&2
                     fi
