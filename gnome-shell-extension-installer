@@ -16,9 +16,8 @@ usage_guide() {
             "\n  --yes \t\tSkip all prompts (be careful on using this!)."\
             "\n  -h or --help \t\tPrint this message.\n" \
             "\nUsage example:"\
-            "\n  `basename $0` 861 3.14 --yes"\
-            "\n  # Downloads \"Small Panel Icon\" for GNOME Shell 3.14"\
-            "answering yes to all questions."
+            "\n  `basename $0` 861 3.12 --yes"\
+            "\n  # Installs \"Small Panel Icon\" for GNOME Shell 3.12 answering yes to all questions."
 }
 
 check_version_validation() {
@@ -27,9 +26,11 @@ check_version_validation() {
     { echo -en "\nExtension version validation is enabled on GNOME Shell." \
                "\nTo use extensions older than the current version of Shell, you have to disable it." \
                "\nDo it now (y/N)? "
+      [ $SKIP_PROMPTS ] &&
+      { echo "yes"
+        DO_IT="yes"; } ||
       read DO_IT
-      [ "$DO_IT" == "y" ] ||
-      [ "$DO_IT" == "Y" ] &&
+      [[ ${DO_IT::1} =~ (y|Y) ]] &&
       gsettings set org.gnome.shell disable-extension-version-validation true &&
       echo -e "\nThe extension version validation has been disabled."; }
 }
@@ -44,11 +45,16 @@ get_available_versions() {
       unset SELECTED_VERSION
       while [ ! "$SELECTED_VERSION" ]; do
           echo -n "Type a version to install: "
-          read INPUT
-          for VERSION in ${AVAILABLE_VERSIONS[@]}; do
-              [ "$INPUT" == "$VERSION" ] &&
-              SELECTED_VERSION="$INPUT"
-          done
+          if [ ! $SKIP_PROMPTS ]; then
+              read INPUT
+              for VERSION in ${AVAILABLE_VERSIONS[@]}; do
+                  [ "$INPUT" == "$VERSION" ] &&
+                  SELECTED_VERSION="$INPUT"
+              done
+          else
+              echo "${AVAILABLE_VERSIONS[0]}"
+              SELECTED_VERSION="${AVAILABLE_VERSIONS[0]}"
+          fi
       done; }
     [ "$SELECTED_VERSION" ] &&
     check_version_validation &&
@@ -125,7 +131,12 @@ while [ $COUNTER -gt 0 ]; do
     case "$1" in
         -h | --help)
             usage_guide
-            exit 1
+            exit 0
+            ;;
+        --yes )
+            SKIP_PROMPTS=1
+            shift
+            (( COUNTER -= 1 ))
             ;;
         3.[0-9.]*)
             TARGET_VERSION="$1"
