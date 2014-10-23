@@ -101,8 +101,8 @@ extract_extension() {
 extract_info() {
     EXTENSION_NAME=$( sed 's/^.*\"name\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
     EXTENSION_DESCRIPTION=$( sed 's/^.*\"description\": \"//g' <<< "${EXTENSIONS_QUERY[$n]}" |
-		                     sed 's/\", \"creator\".*$//g' |
-        			         sed 's/\\\"/\"/g' )
+                             sed 's/\", \"creator\".*$//g' |
+                             sed 's/\\\"/\"/g' )
     EXTENSION_CREATOR=$( sed 's/^.*\"creator\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
     EXTENSION_UUID=$( sed 's/^.*\"uuid\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
     EXTENSION_ID=$( sed 's/^.*\"pk\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$1" )
@@ -114,9 +114,9 @@ extract_info() {
 }
 
 download_info() {
-	unset EXTENSION_INFO EXTENSIONS_QUERY
-	PAGES=-1
-	TOTAL=0
+    unset EXTENSION_INFO EXTENSIONS_QUERY
+    PAGES=-1
+    TOTAL=0
     EXTENSION_INFO=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
     case "$?" in
         0)
@@ -150,7 +150,7 @@ search_help() {
 }
 
 load_content() {
-	PAGES=$( sed 's/^.*numpages[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
+    PAGES=$( sed 's/^.*numpages[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
     TOTAL=$( sed 's/^.*total[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
     echo -e "Displaying $TOTAL item(s). Page $PAGE_NUM of $PAGES.\n"
     IFS=$'\n' read -d '' -r -a EXTENSIONS_QUERY <<< "$( echo $EXTENSION_INFO | cut -f1 --complement -d"[" | sed 's/{[\"]*shell_version_map[\"]*:/\n/g' )"
@@ -162,11 +162,11 @@ load_content() {
                 "\n   Versions: ${EXTENSION_VERSIONS[@]}"
         (( COUNTER++ ))
     done
+    echo
 }
 
 interactive_search() {
-    load_content
-    echo -e "\nType \"help\" to get information on how to use the search."
+    echo -e "Type \"help\" to get information on how to use the search."
     while [ ! "$EXIT" ]; do
         echo -n "Enter a command: "
         read COMMAND
@@ -183,10 +183,10 @@ interactive_search() {
                 ;;
             d[0-9]*)
                 for n in ${COMMAND:1}; do
-                	if [ $n -lt $TOTAL ]; then
-                	    extract_info "${EXTENSIONS_QUERY[$n]}"
-                		echo -e "[$EXTENSION_NAME]"
-			            echo -e "$EXTENSION_DESCRIPTION"
+                    if [ $n -lt $TOTAL ]; then
+                        extract_info "${EXTENSIONS_QUERY[$n]}"
+                        echo -e "[$EXTENSION_NAME]"
+                        echo -e "$EXTENSION_DESCRIPTION"
                     else
                         echo "[$n] Invalid number" >&2
                     fi
@@ -194,11 +194,11 @@ interactive_search() {
                 ;;
             l[0-9]*)
                 if [ ${COMMAND:1} -lt $TOTAL ]; then
-		            for n in ${COMMAND:1}; do
-		                extract_info "${EXTENSIONS_QUERY[$n]}" &&
-		                echo "[$EXTENSION_NAME] $EXTENSIONS_SITE$EXTENSION_LINK" ||
-		                echo "[$n] Invalid number" >&2
-		            done
+                    for n in ${COMMAND:1}; do
+                        extract_info "${EXTENSIONS_QUERY[$n]}" &&
+                        echo "[$EXTENSION_NAME] $EXTENSIONS_SITE$EXTENSION_LINK" ||
+                        echo "[$n] Invalid number" >&2
+                    done
                 else
                         echo "[$n] Invalid number" >&2
                     fi
@@ -291,12 +291,10 @@ while [ $COUNTER -gt 0 ]; do
                               "No items to display" \
                               "The search page for \"$SEARCH_STRING\"" \
                               "Failed to obtain page info" &&
-                interactive_search
-                exit
-            else
-                echo "`basename $0`: no search string specified" >&2
-                exit 1
+                load_content
             fi
+            interactive_search
+            exit
             ;;
         --yes )
             SKIP_PROMPTS=1
