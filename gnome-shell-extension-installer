@@ -276,51 +276,42 @@ EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
 
 COUNTER="$#"
 while [ $COUNTER -gt 0 ]; do
-    case "$1" in
-        -h | --help)
-            usage_guide
-            exit 0
-            ;;
-        -s | --search)
-            unset SKIP_PROMPTS
-            SEARCH_STRING="$2"
-            PAGE_NUM="1"
-            if [ "$SEARCH_STRING" ]; then
-                echo "[$SEARCH_STRING] Performing search"
-                download_info "/extension-query/?search=${SEARCH_STRING// /%20}&page=1" \
-                              "No items to display" \
-                              "The search page for \"$SEARCH_STRING\"" \
-                              "Failed to obtain page info" &&
-                load_content
-            fi
-            interactive_search
-            exit
-            ;;
-        --yes )
-            SKIP_PROMPTS=1
-            shift
-            (( COUNTER -= 1 ))
-            ;;
-        3.[0-9.]*)
-            TARGET_VERSION="$1"
-            shift
-            (( COUNTER -= 1 ))
-            ;;
-        [0-9]*)
-            set "$@" "$1"
-            shift
-            (( COUNTER -= 1 ))
-            ;;
-        -*)
+    if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+        usage_guide
+        exit 0
+    elif [ "$1" == "-s" ] || [ "$1" == "--search" ]; then
+        unset SKIP_PROMPTS
+        SEARCH_STRING="$2"
+        PAGE_NUM="1"
+        if [ "$SEARCH_STRING" ]; then
+            echo "[$SEARCH_STRING] Performing search"
+            download_info "/extension-query/?search=${SEARCH_STRING// /%20}&page=1" \
+                          "No items to display" \
+                          "The search page for \"$SEARCH_STRING\"" \
+                          "Failed to obtain page info" &&
+            load_content
+        fi
+        interactive_search
+    elif [ "$1" == "--yes" ]; then
+        SKIP_PROMPTS=1
+        shift
+        (( COUNTER -= 1 ))
+    elif [[ $1 =~ ^3.[0-9.]+$ ]]; then
+        TARGET_VERSION="$1"
+        shift
+        (( COUNTER -= 1 ))
+    elif [[ $1 =~ ^[0-9]+$ ]]; then
+        set "$@" "$1"
+        shift
+        (( COUNTER -= 1 ))
+    elif [[ $1 =~ ^- ]]; then
             echo -e "`basename $0`: unrecognized option '$1'\n" >&2
             usage_guide
             exit 1
-            ;;
-        *)
-            echo "`basename $0`: '$1' is not a valid Extension ID" >&2
-            exit 1
-            ;;
-    esac
+	else
+        echo "`basename $0`: '$1' is not a valid Extension ID" >&2
+        exit 1
+	fi
 done
 
 for EXTENSION_ID in "$@"; do
