@@ -100,12 +100,16 @@ extract_extension() {
 
 extract_info() {
     EXTENSION_NAME=$( sed 's/^.*\"name\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
+    EXTENSION_DESCRIPTION=$( sed 's/^.*\"description\": \"//g' <<< "${EXTENSIONS_QUERY[$n]}" |
+		                     sed 's/\", \"creator\".*$//g' )
     EXTENSION_CREATOR=$( sed 's/^.*\"creator\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
     EXTENSION_UUID=$( sed 's/^.*\"uuid\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
     EXTENSION_ID=$( sed 's/^.*\"pk\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$1" )
     EXTENSION_LINK=$( sed 's/^.*\"link\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
-    EXTENSION_URL=$( grep "download_url" <<< "$1" | sed 's/^.*\"download_url\"[: \"]*\([^\"]*\).*$/\1/' )
-    EXTENSION_VERSIONS=($( sed 's/[\"]*:[ ]*{[\"]*pk[\"]*:/\n/g' <<< "$1" | sed '$ d' | sed 's/^.*\"//g' | sort -rV ))
+    EXTENSION_URL=$( grep "download_url" <<< "$1" |
+                     sed 's/^.*\"download_url\"[: \"]*\([^\"]*\).*$/\1/' )
+    EXTENSION_VERSIONS=($( sed 's/[\"]*:[ ]*{[\"]*pk[\"]*:/\n/g' <<< "$1" |
+                           sed '$ d' | sed 's/^.*\"//g' | sort -rV ))
 }
 
 download_info() {
@@ -171,9 +175,9 @@ interactive_search() {
             d[0-9]*)
                 for n in ${COMMAND:1}; do
                 	if [ ${COMMAND:1} -lt $TOTAL ]; then
-		                echo -e "[$EXTENSION_NAME]\n${EXTENSIONS_QUERY[$n]}" |
-		                	sed 's/^.*\"description\": \"//' |
-		                	sed 's/\", \"creator\".*$//'
+                	    extract_info "${EXTENSIONS_QUERY[$n]}"
+                		echo -e "[$EXTENSION_NAME]"
+			            echo -e "$EXTENSION_DESCRIPTION"
                     else
                         echo "[$n] Invalid number" >&2
                     fi
