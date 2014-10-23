@@ -29,4 +29,4 @@ mv gnome-shell-extensions-installer /usr/bin/
 
 ### AUR (Arch Linux)
 
-[This is the package](https://aur.archlinux.org/packages/gnome-shell-extensions-installer). You know what do do.
+[This is the AUR page](https://aur.archlinux.org/packages/gnome-shell-extensions-installer). You know what do do.
