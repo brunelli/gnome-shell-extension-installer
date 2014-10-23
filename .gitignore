@@ -1,4 +1,4 @@
 PKGBUILD
-*.tar.xz
+*.tar.*
 /src/*
 /pkg/*
