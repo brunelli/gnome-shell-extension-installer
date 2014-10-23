@@ -152,11 +152,12 @@ interactive_search() {
                     echo "[$n] Invalid number" >&2
                 done
                 ;;
-            p[0-9])
+            p[0-9]*)
                 if [ ${COMMAND:1} -le $PAGES ]; then
                     PAGE_NUM="${COMMAND:1}"
                     echo "[$SEARCH_STRING] Obtaining page $PAGE_NUM"
                     download_info "/extension-query/?search=$SEARCH_STRING&page=$PAGE_NUM" \
+                                  "No items found" \
                                   "The page $PAGE_NUM" \
                                   "Failed to obtain page info" &&
                     interactive_search
@@ -185,14 +186,19 @@ download_info() {
     EXTENSION_INFO=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
     case "$?" in
         0)
-            return 0
+            if [ "$( echo $EXTENSION_INFO | grep name )" ]; then
+                return 0
+            else
+                echo -e "\e[0;31mERROR\e[0m: $2" >&2
+                return 2
+            fi
             ;;
         22)
-            echo -e "\e[0;31mERROR\e[0m: $2 could not be found" >&2
+            echo -e "\e[0;31mERROR\e[0m: $3 could not be found" >&2
             return 22
             ;;
         *)
-            echo -e "\e[0;31mERROR\e[0m: $3 (curl error $?)" >&2
+            echo -e "\e[0;31mERROR\e[0m: $4 (curl error $?)" >&2
             return 1
             ;;
     esac
@@ -201,6 +207,7 @@ download_info() {
 main_program() {
     echo "[$EXTENSION_ID] Obtaining extension info"
     download_info "/extension-info/?pk=$EXTENSION_ID&shell_version=$1" \
+                  "Blank file" \
                   "The extension $EXTENSION_ID" \
                   "Failed to obtain extension info" &&
     { extract_info "$EXTENSION_INFO"
@@ -239,7 +246,8 @@ while [ $COUNTER -gt 0 ]; do
             if [ "$SEARCH_STRING" ]; then
                 echo "[$SEARCH_STRING] Performing search"
                 download_info "/extension-query/?search=${SEARCH_STRING// /%20}&page=1" \
-                               "The search page for \"$SEARCH_STRING\"" \
+                              "No items found" \
+                              "The search page for \"$SEARCH_STRING\"" \
                               "Failed to obtain page info" &&
                 interactive_search
                 exit
