@@ -4,7 +4,7 @@
  #                                                                         #
  #                     GNOME Shell Extension Installer                     #
  #                                                                         #
- #   Version: 1.2.2 (23/10/2014)                                           #
+ #   Version: 1.3 (23/10/2014)                                             #
  #   Author: Ian Brunelli <ian@brunelli.me>                                #
  #   URL: https://github.com/ianbrunelli/gnome-shell-extension-installer   #
  #                                                                         #
@@ -145,6 +145,10 @@ search_help() {
             "\nd<number(s)>\tGet description(s)" \
             "\nl<number(s)>\tGet link(s) on extensions.gnome.org" \
             "\np<number>\tGo to page" \
+            "\nsn\t\tSort by name" \
+            "\nsr\t\tSort by recent" \
+            "\nsd\t\tSort by downloads" \
+            "\nsp\t\tSort by popularity (default)" \
             "\n/<string>\tPerform another search" \
             "\nr\t\tPrint the search content again" \
             "\nh or help\tShow this message" \
@@ -209,7 +213,7 @@ interactive_search() {
             if [[ $PAGE -le $PAGES ]]; then
                 PAGE_NUM="${COMMAND:1}"
                 echo "[$SEARCH_STRING] Obtaining page $PAGE_NUM"
-                download_info "/extension-query/?search=$SEARCH_STRING&page=$PAGE_NUM" \
+                download_info "/extension-query/?sort=$SORTsearch=$SEARCH_STRING&page=$PAGE_NUM" \
                               "No items to display" \
                               "The page $PAGE_NUM" \
                               "Failed to obtain page info" &&
@@ -217,6 +221,19 @@ interactive_search() {
             else
                 echo "[$PAGE] Invalid page number" >&2
             fi
+        elif [[ $COMMAND =~ ^s(n|r|d|p)$ ]]; then
+            case ${COMMAND:1:1} in
+                n) SORT="name" ;;
+                r) SORT="recent" ;;
+                d) SORT="downloads" ;;
+                p) SORT="popularity" ;;
+            esac
+            echo "[$SEARCH_STRING] Obtaining page 1 sorted by $SORT"
+                download_info "/extension-query/?sort=$SORT&search=$SEARCH_STRING&page=1" \
+                              "No items to display" \
+                              "The page $PAGE_NUM" \
+                              "Failed to obtain page info" &&
+                load_content        
         elif [[ $COMMAND =~ ^(h|help)$ ]]; then
             search_help
         elif [[ $COMMAND =~ ^r$ ]]; then
@@ -228,7 +245,7 @@ interactive_search() {
             if [ "${COMMAND:1}" ]; then
                 SEARCH_STRING="${COMMAND:1}"
                 echo "[$SEARCH_STRING] Performing search"
-                download_info "/extension-query/?search=$SEARCH_STRING&page=1" \
+                download_info "/extension-query/?sort=$SORT&search=$SEARCH_STRING&page=1" \
                               "No items to display" \
                               "The search page for \"$SEARCH_STRING\"" \
                               "Failed to obtain page info" &&
@@ -269,6 +286,7 @@ set "${GNOME_VERSION:12}" "$@"
 DOWNLOAD_PARAMETERS="-Lfs"
 EXTENSIONS_SITE="https://extensions.gnome.org"
 EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
+SORT="popularity"
 
 PAGES=-1
 TOTAL=-1
@@ -284,7 +302,7 @@ while [ $COUNTER -gt 0 ]; do
         PAGE_NUM="1"
         if [ "$SEARCH_STRING" ]; then
             echo "[$SEARCH_STRING] Performing search"
-            download_info "/extension-query/?search=${SEARCH_STRING// /%20}&page=1" \
+            download_info "/extension-query/?sort=$SORT&search=${SEARCH_STRING// /%20}&page=1" \
                           "No items to display" \
                           "The search page for \"$SEARCH_STRING\"" \
                           "Failed to obtain page info" &&
