@@ -51,23 +51,27 @@ install_version() {
     fi
 }
 
+check_version_availability() {
+    for VERSION in ${EXTENSION_VERSIONS[@]}; do
+        [ "$1" == "$VERSION" ] &&
+        SELECTED_VERSION="$1"
+    done
+}
+
 select_version() {
     unset SELECTED_VERSION
-    while [[ ! "$SELECTED_VERSION" ]]; do
+    while [[ ! $SELECTED_VERSION ]]; do
         echo -n $1"Type a version to install: "
-        if [ ! $SKIP_PROMPTS ]; then
+        if [[ ! $SKIP_PROMPTS ]]; then
             read INPUT
-            for VERSION in ${EXTENSION_VERSIONS[@]}; do
-                [ "$INPUT" == "$VERSION" ] &&
-                SELECTED_VERSION="$INPUT"
-            done
-            [[ ! "$SELECTED_VERSION" ]] &&
+            check_version_availability "$INPUT"
+            [[ $INPUT =~ (q|quit|exit) ]] && return 1
+            [[ ! $SELECTED_VERSION ]] &&
             echo "Available versions: ${EXTENSION_VERSIONS[@]}"
         else
             echo "${EXTENSION_VERSIONS[0]}"
             SELECTED_VERSION="${EXTENSION_VERSIONS[0]}"
         fi
-        [[ "$INPUT" =~ (q|quit|exit) ]] && return 1
     done
 }
 
@@ -173,7 +177,7 @@ load_content() {
 
 interactive_search() {
     echo -e "Type \"help\" to get information on how to use the search."
-    while [ ! "$EXIT" ]; do
+    while [[ ! $EXIT ]]; do
         echo -n "Enter a command: "
         read COMMAND
         if [[ $COMMAND =~ ^[0-9]+( |[0-9])*$ ]]; then
@@ -228,12 +232,14 @@ interactive_search() {
                 d) SORT="downloads" ;;
                 p) SORT="popularity" ;;
             esac
-            echo "[$SEARCH_STRING] Obtaining page 1 sorted by $SORT"
-                download_info "/extension-query/?sort=$SORT&search=$SEARCH_STRING&page=1" \
-                              "No items to display" \
-                              "The page $PAGE_NUM" \
-                              "Failed to obtain page info" &&
-                load_content        
+            echo "Sorting by $SORT"
+            [ $TOTAL -gt 0 ] &&
+            { echo "[$SEARCH_STRING] Obtaining page 1"
+                  download_info "/extension-query/?sort=$SORT&search=$SEARCH_STRING&page=1" \
+                                "No items to display" \
+                                "The page $PAGE_NUM" \
+                                "Failed to obtain page info" &&
+                  load_content; }
         elif [[ $COMMAND =~ ^(h|help)$ ]]; then
             search_help
         elif [[ $COMMAND =~ ^r$ ]]; then
@@ -261,19 +267,14 @@ interactive_search() {
 
 main_program() {
     echo "[$EXTENSION_ID] Obtaining extension info"
-    download_info "/extension-info/?pk=$EXTENSION_ID&shell_version=$1" \
+    download_info "/extension-info/?pk=$EXTENSION_ID" \
                   "Blank file" \
                   "The extension $EXTENSION_ID" \
                   "Failed to obtain extension info" &&
     { extract_info "$EXTENSION_INFO"
-      if [ "$EXTENSION_URL" ]; then
-          echo "[$EXTENSION_NAME] Downloading extension"
-          if curl $DOWNLOAD_PARAMETERS -o "/tmp/shell-extension-install.$EXTENSION_ID.zip" "$EXTENSIONS_SITE$EXTENSION_URL"; then
-              extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
-              enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
-          else
-              echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
-          fi
+      check_version_availability "$1"
+      if [ "$SELECTED_VERSION" ]; then
+          install_version "$EXTENSION_INFO" "$SELECTED_VERSION"
       else
           echo "[$EXTENSION_NAME] Extension not available for GNOME Shell $1"
           get_other_version "$1"
@@ -298,14 +299,13 @@ while [ $COUNTER -gt 0 ]; do
         unset SKIP_PROMPTS
         SEARCH_STRING="$2"
         PAGE_NUM="1"
-        if [ "$SEARCH_STRING" ]; then
-            echo "[$SEARCH_STRING] Performing search"
-            download_info "/extension-query/?sort=$SORT&search=${SEARCH_STRING// /%20}&page=1" \
-                          "No items to display" \
-                          "The search page for \"$SEARCH_STRING\"" \
-                          "Failed to obtain page info" &&
-            load_content
-        fi
+        [[ $SEARCH_STRING ]] &&
+        { echo "[$SEARCH_STRING] Performing search"
+          download_info "/extension-query/?sort=$SORT&search=${SEARCH_STRING// /%20}&page=1" \
+                        "No items to display" \
+                        "The search page for \"$SEARCH_STRING\"" \
+                        "Failed to obtain page info" &&
+          load_content; }
         interactive_search
     elif [ "$1" == "--yes" ]; then
         SKIP_PROMPTS=1
@@ -321,8 +321,8 @@ while [ $COUNTER -gt 0 ]; do
         (( COUNTER -= 1 ))
     elif [[ $1 =~ ^- ]]; then
         echo -e "`basename $0`: unrecognized option '$1'\n" >&2
-usage_guide >&2
-                exit 1
+        usage_guide >&2
+        exit 1
     else
         echo "`basename $0`: '$1' is not a valid Extension ID" >&2
         exit 1
