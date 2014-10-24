@@ -281,8 +281,6 @@ main_program() {
 }
 
 GNOME_VERSION=$( gnome-shell --version )
-set "${GNOME_VERSION:12}" "$@"
-
 DOWNLOAD_PARAMETERS="-Lfs"
 EXTENSIONS_SITE="https://extensions.gnome.org"
 EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
@@ -330,6 +328,9 @@ usage_guide >&2
         exit 1
     fi
 done
+
+[[ ! $TARGET_VERSION ]] &&
+TARGET_VERSION="$( grep -oP "[0-9]+\.[0-9]+" <<< "$GNOME_VERSION" )"
 
 for EXTENSION_ID in "$@"; do
     main_program "$TARGET_VERSION"
