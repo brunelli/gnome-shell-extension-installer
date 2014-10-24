@@ -13,8 +13,8 @@
 usage_guide() {
     echo -e "Usage: `basename $0` EXTENSION_ID [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]\n" \
             "\nOptions:" \
-            "\n  -s or --search \"STRING\"\tInteractive search for extensions matching STRING." \
-            "\n  --yes \t\t\tSkip all prompts (don't affect search mode)." \
+            "\n  -s or --search [ STRING ]\tInteractive search." \
+            "\n  --yes \t\t\tSkip all prompts (don't affect search)." \
             "\n  -h or --help \t\t\tPrint this message.\n" \
             "\nUsage examples:" \
             "\n  # Install \"Small Panel Icon\" for GNOME Shell 3.12 answering yes to all questions:" \
@@ -323,8 +323,8 @@ while [ $COUNTER -gt 0 ]; do
         (( COUNTER -= 1 ))
     elif [[ $1 =~ ^- ]]; then
         echo -e "`basename $0`: unrecognized option '$1'\n" >&2
-        usage_guide
-        exit 1
+usage_guide >&2
+                exit 1
     else
         echo "`basename $0`: '$1' is not a valid Extension ID" >&2
         exit 1
