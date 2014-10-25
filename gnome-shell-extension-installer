@@ -11,16 +11,16 @@
  ###########################################################################
 
 usage_guide() {
-    echo -e "Usage: `basename $0` EXTENSION_ID [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]\n" \
+    echo -e "Usage: $SCRIPT_NAME EXTENSION_ID [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]\n" \
             "\nOptions:" \
             "\n  -s or --search [ STRING ]\tInteractive search." \
             "\n  --yes \t\t\tSkip all prompts (don't affect search)." \
             "\n  -h or --help \t\t\tPrint this message.\n" \
             "\nUsage examples:" \
             "\n  # Install \"Small Panel Icon\" for GNOME Shell 3.12 answering yes to all questions:" \
-            "\n  `basename $0` 861 3.12 --yes\n" \
+            "\n  $SCRIPT_NAME 861 3.12 --yes\n" \
             "\n  # Search for extensions matching \"User Themes\":" \
-            "\n  `basename $0` -s \"User Themes\""
+            "\n  $SCRIPT_NAME -s \"User Themes\""
 }
 
 check_version_validation() {
@@ -300,6 +300,7 @@ EXTENSIONS_SITE="https://extensions.gnome.org"
 EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
 SORT="popularity"
 
+SCRIPT_NAME=$( basename "$0" )
 PAGES=-1
 TOTAL=-1
 
@@ -333,11 +334,11 @@ while [ $COUNTER -gt 0 ]; do
         shift
         (( COUNTER -= 1 ))
     elif [[ $1 =~ ^- ]]; then
-        echo -e "`basename $0`: unrecognized option '$1'\n" >&2
+        echo -e "$SCRIPT_NAME: unrecognized option '$1'\n" >&2
         usage_guide >&2
         exit 1
     else
-        echo "`basename $0`: '$1' is not a valid Extension ID" >&2
+        echo "$SCRIPT_NAME: '$1' is not a valid Extension ID" >&2
         exit 1
     fi
 done
