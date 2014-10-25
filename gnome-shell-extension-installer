@@ -205,8 +205,12 @@ interactive_search() {
             for n in ${COMMAND:1}; do
                 if [[ $n -lt $TOTAL ]]; then
                     extract_info "${EXTENSIONS_QUERY[$n]}"
-                    echo -e "[$EXTENSION_NAME]"
-                    echo -e "$EXTENSION_DESCRIPTION"
+                    if [[ $( echo -e "$EXTENSION_DESCRIPTION" | wc -l ) -gt 10 ]] &&
+                       [[ $( type less 2> "/dev/null" ) ]]; then
+                        less <<< "$( echo -e "[$EXTENSION_NAME]\n$EXTENSION_DESCRIPTION" )"
+                    else
+                        echo -e "[$EXTENSION_NAME]\n$EXTENSION_DESCRIPTION"
+                    fi
                 else
                     echo "[$n] Invalid extension number" >&2
                 fi
