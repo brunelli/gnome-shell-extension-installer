@@ -60,19 +60,23 @@ check_version_availability() {
 
 select_version() {
     unset SELECTED_VERSION
-    while [[ ! $SELECTED_VERSION ]]; do
-        echo -n $1"Type a version to install: "
-        if [[ ! $SKIP_PROMPTS ]]; then
-            read INPUT
-            check_version_availability "$INPUT"
-            [[ $INPUT =~ (q|quit|exit) ]] && return 1
-            [[ ! $SELECTED_VERSION ]] &&
-            echo "Available versions: ${EXTENSION_VERSIONS[@]}"
-        else
-            echo "${EXTENSION_VERSIONS[0]}"
-            SELECTED_VERSION="${EXTENSION_VERSIONS[0]}"
-        fi
-    done
+    if [[ "${EXTENSION_VERSIONS[0]}" ]]; then
+        while [[ ! $SELECTED_VERSION ]]; do
+           echo -n $1"Type a version to install: "
+           if [[ ! $SKIP_PROMPTS ]]; then
+               read INPUT
+               check_version_availability "$INPUT"
+               [[ $INPUT =~ (q|quit|exit) ]] && return 1
+               [[ ! $SELECTED_VERSION ]] &&
+               echo "Available versions: ${EXTENSION_VERSIONS[@]}"
+           else
+               echo "${EXTENSION_VERSIONS[0]}"
+               SELECTED_VERSION="${EXTENSION_VERSIONS[0]}"
+           fi
+        done
+    else
+        echo "(no version available)"
+    fi
 }
 
 get_other_version() {
@@ -168,8 +172,11 @@ load_content() {
     COUNTER=0
     for EXTENSION in "${EXTENSIONS_QUERY[@]}"; do
         extract_info "$EXTENSION"
-        echo -e "$COUNTER: $EXTENSION_NAME, by $EXTENSION_CREATOR" \
-                "\n   Versions: ${EXTENSION_VERSIONS[@]}"
+        echo -en "$COUNTER: $EXTENSION_NAME, by $EXTENSION_CREATOR" \
+                "\n   Versions: "
+        [[ "${EXTENSION_VERSIONS[@]}" ]] &&
+        echo "${EXTENSION_VERSIONS[@]}" ||
+        echo "(no version available)"
         (( COUNTER++ ))
     done
     echo
@@ -184,7 +191,7 @@ interactive_search() {
             for n in $COMMAND; do
                 if extract_info "${EXTENSIONS_QUERY[$n]}" && [ $n -lt $TOTAL ]; then
                     [[ ${#EXTENSION_VERSIONS[@]} == 1 ]] &&
-                    SELECTED_VERSION="${EXTENSION_VERSIONS[@]}" ||
+                    SELECTED_VERSION="${EXTENSION_VERSIONS[@]}"
                     select_version "[$EXTENSION_NAME] "
                     [ "$SELECTED_VERSION" ] &&
                     install_version "${EXTENSIONS_QUERY[$n]}" "$SELECTED_VERSION"
