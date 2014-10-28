@@ -4,7 +4,7 @@
  #                                                                         #
  #                     GNOME Shell Extension Installer                     #
  #                                                                         #
- #   Version: 1.3.2 (25/10/2014)                                           #
+ #   Version: 1.3.3 (28/10/2014)                                           #
  #   Author: Ian Brunelli <ian@brunelli.me>                                #
  #   URL: https://github.com/ianbrunelli/gnome-shell-extension-installer   #
  #                                                                         #
@@ -157,8 +157,9 @@ search_help() {
             "\nsr\t\tSort by recent" \
             "\nsd\t\tSort by downloads" \
             "\nsp\t\tSort by popularity (default)" \
-            "\n/<string>\tPerform another search" \
             "\nr\t\tPrint the search content again" \
+            "\n/<string>\tPerform another search" \
+            "\nhome\t\tLoad extensions.gnome.org homepage" \
             "\nh or help\tShow this message" \
             "\nexit\t\tExit search shell"
 }
@@ -255,6 +256,14 @@ interactive_search() {
                   load_content; }
         elif [[ $COMMAND =~ ^(h|help)$ ]]; then
             search_help
+        elif [[ $COMMAND =~ ^home$ ]]; then
+            SEARCH_STRING="extensions.gnome.org"
+            echo "[$SEARCH_STRING] Loading homepage"
+            download_info "/extension-query/?sort=$SORT&page=1" \
+                          "No items to display" \
+                          "The page" \
+                          "Failed to obtain page info" &&
+            load_content
         elif [[ $COMMAND =~ ^r$ ]]; then
             [ $TOTAL -gt 0 ] &&
             load_content
