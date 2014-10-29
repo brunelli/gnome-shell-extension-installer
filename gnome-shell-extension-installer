@@ -93,10 +93,12 @@ get_other_version() {
 }
 
 enable_extension() {
-    ENABLED_EXTENSIONS=$( gsettings get org.gnome.shell enabled-extensions )
+    ENABLED_EXTENSIONS=$( gsettings get org.gnome.shell enabled-extensions |
+                          cut -f 1 -d "[" --complement )
     [ "$( grep -v "$2" <<< "$ENABLED_EXTENSIONS" )" ] &&
     { echo "[$1] Enabling extension"
-      gsettings set org.gnome.shell enabled-extensions "${ENABLED_EXTENSIONS%?}, '$2']" &&
+      [[ ${ENABLED_EXTENSIONS%?} ]] && SEPARATOR=", "
+      gsettings set org.gnome.shell enabled-extensions "[${ENABLED_EXTENSIONS%?}$SEPARATOR'$2']" &&
       echo "[$1] Extension enabled (you may have to restart GNOME Shell)"; } ||
     echo "[$1] The extension is already enabled"
 }
