@@ -1,7 +1,9 @@
 GNOME Shell Extension Installer
 ===============================
 
-A bash script to install and search extensions from [extensions.gnome.org](https://extensions.gnome.org/)
+A bash script to install and search extensions from [extensions.gnome.org](https://extensions.gnome.org/).
+
+By default extensions are installed on `$HOME/.local/share/gnome-shell/extensions/`, except if the script is run with super user permission (then, it will be installed on `/usr/share/gnome-shell/extensions/`).
 
 ## Help
 

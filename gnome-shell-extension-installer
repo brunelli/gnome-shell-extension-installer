@@ -4,7 +4,7 @@
  #                                                                         #
  #                     GNOME Shell Extension Installer                     #
  #                                                                         #
- #   Version: 1.3.3 (28/10/2014)                                           #
+ #   Version: 1.3.3 (31/10/2014)                                           #
  #   Author: Ian Brunelli <ian@brunelli.me>                                #
  #   URL: https://github.com/ianbrunelli/gnome-shell-extension-installer   #
  #                                                                         #
@@ -312,8 +312,11 @@ main_program() {
 GNOME_VERSION="$( grep -oP "[0-9]+\.[0-9]+" <<< "$( gnome-shell --version )" )"
 DOWNLOAD_PARAMETERS="-Lfs"
 EXTENSIONS_SITE="https://extensions.gnome.org"
-EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
 SORT="popularity"
+
+[[ $EUID -eq 0 ]] &&
+EXTENSIONS_PATH="/usr/share/gnome-shell/extensions" ||
+EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
 
 SCRIPT_NAME=$( basename "$0" )
 PAGES=-1
