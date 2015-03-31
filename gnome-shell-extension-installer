@@ -44,10 +44,10 @@ install_version() {
     if curl $DOWNLOAD_PARAMETERS -o "/tmp/shell-extension-install.$EXTENSION_ID.zip" \
             "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET";
     then
-      extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
-      enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
+        extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
+        enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID"
     else
-      echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
+        echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
     fi
 }
 
@@ -343,10 +343,14 @@ while [ $COUNTER -gt 0 ]; do
         SKIP_PROMPTS=1
         shift
         (( COUNTER -= 1 ))
-    elif [[ $1 =~ ^3.[0-9.]+$ ]]; then
+    elif [[ $1 =~ ^3\.[0-9\.]+$ ]]; then
         GNOME_VERSION="$1"
         shift
         (( COUNTER -= 1 ))
+        if [ $COUNTER == 0 ] && [ $# == 0 ]; then
+            echo -e "$SCRIPT_NAME: missing arguments" >&2
+            exit 2
+        fi
     elif [[ $1 =~ ^[0-9]+$ ]]; then
         set "$@" "$1"
         shift
@@ -354,10 +358,10 @@ while [ $COUNTER -gt 0 ]; do
     elif [[ $1 =~ ^- ]]; then
         echo -e "$SCRIPT_NAME: unrecognized option '$1'\n" >&2
         usage_guide >&2
-        exit 1
+        exit 3
     else
         echo "$SCRIPT_NAME: '$1' is not a valid Extension ID" >&2
-        exit 1
+        exit 4
     fi
 done
 
