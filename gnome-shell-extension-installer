@@ -365,6 +365,10 @@ while [ $COUNTER -gt 0 ]; do
     fi
 done
 
-for EXTENSION_ID in "$@"; do
-    main_program "$GNOME_VERSION"
-done
+if [ $# -gt 0 ]; then
+    for EXTENSION_ID in "$@"; do
+        main_program "$GNOME_VERSION"
+    done
+else
+    usage_guide
+fi
