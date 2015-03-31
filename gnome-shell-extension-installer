@@ -163,7 +163,7 @@ search_help() {
             "\n/<string>\tPerform another search" \
             "\nhome\t\tLoad extensions.gnome.org homepage" \
             "\nh or help\tShow this message" \
-            "\nexit\t\tExit search shell"
+            "\nq or quit\tExit search shell"
 }
 
 load_content() {
@@ -273,7 +273,7 @@ interactive_search() {
         elif [[ $COMMAND =~ ^r$ ]]; then
             [ $TOTAL -gt 0 ] &&
             load_content
-        elif [[ $COMMAND =~ ^exit$ ]]; then
+        elif [[ $COMMAND =~ ^(exit|quit|q)$ ]]; then
             exit
         elif [[ $COMMAND =~ ^/ ]]; then
             if [ "${COMMAND:1}" ]; then
