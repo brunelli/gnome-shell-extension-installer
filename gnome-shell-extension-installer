@@ -4,7 +4,7 @@
  #                                                                         #
  #                     GNOME Shell Extension Installer                     #
  #                                                                         #
- #   Version: 1.3.5 (05/05/2015)                                           #
+ #   Version: 1.4 (05/05/2015)                                             #
  #   Author: Ian Brunelli <ian@brunelli.me>                                #
  #   URL: https://github.com/ianbrunelli/gnome-shell-extension-installer   #
  #                                                                         #
@@ -224,22 +224,23 @@ search_help() {
 }
 
 load_content() {
+    unset CONTENT
     PAGES=$( sed 's/^.*numpages[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
     TOTAL=$( sed 's/^.*total[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
-    echo -e "Displaying $TOTAL item(s). Page $PAGE_NUM of $PAGES.\n"
+    echo "Displaying $TOTAL item(s). Page $PAGE_NUM of $PAGES.\n"
     IFS=$'\n' read -d '' -r -a EXTENSIONS_QUERY <<< "$( echo $EXTENSION_INFO | cut -f1 --complement -d"[" | sed 's/{[\"]*shell_version_map[\"]*:/\n/g' )"
 
     COUNTER=0
     for EXTENSION in "${EXTENSIONS_QUERY[@]}"; do
         extract_info "$EXTENSION"
-        echo -en "$COUNTER: $EXTENSION_NAME, by $EXTENSION_CREATOR" \
+        echo -n "$COUNTER: $EXTENSION_NAME, by $EXTENSION_CREATOR" \
                 "\n   Versions: "
         [[ "${EXTENSION_VERSIONS[@]}" ]] &&
         echo "${EXTENSION_VERSIONS[@]}" ||
         echo "(no version available)"
         (( COUNTER++ ))
     done
-    echo
+    echo "\n"
 }
 
 interactive_search() {
@@ -332,7 +333,8 @@ interactive_search() {
                               "No items to display" \
                               "The page $PAGE_NUM" \
                               "Failed to obtain page info" &&
-                load_content
+                CONTENT=$( load_content )
+                echo -en "$CONTENT"
             else
                 echo "[$PAGE] Invalid page number" >&2
             fi
@@ -352,7 +354,8 @@ interactive_search() {
                                 "No items to display" \
                                 "The page $PAGE_NUM" \
                                 "Failed to obtain page info" &&
-                  load_content; }
+                  CONTENT=$( load_content )
+                  echo -en "$CONTENT"; }
         elif [[ $COMMAND =~ ^(h|help)$ ]]; then
             search_help
         elif [[ $COMMAND =~ ^home$ ]]; then
@@ -362,10 +365,12 @@ interactive_search() {
                           "No items to display" \
                           "The page" \
                           "Failed to obtain page info" &&
-            load_content
+            CONTENT=$( load_content )
+            echo -en "$CONTENT"
         elif [[ $COMMAND =~ ^r$ ]]; then
             [ $TOTAL -gt 0 ] &&
-            load_content
+            CONTENT=$( load_content )
+            echo -en "$CONTENT"
         elif [[ $COMMAND =~ ^(exit|quit|q)$ ]]; then
             exit
         elif [[ $COMMAND =~ ^/ ]]; then
@@ -376,7 +381,8 @@ interactive_search() {
                               "No items to display" \
                               "The search page for \"$SEARCH_STRING\"" \
                               "Failed to obtain page info" &&
-                load_content
+                CONTENT=$( load_content )
+                echo -en "$CONTENT"
             else
                 echo "No search string specified" >&2
             fi
@@ -431,7 +437,8 @@ while [ $COUNTER -gt 0 ]; do
                         "No items to display" \
                         "The search page for \"$SEARCH_STRING\"" \
                         "Failed to obtain page info" &&
-          load_content; }
+          CONTENT=$( load_content )
+          echo -en "$CONTENT"; }
         interactive_search
     elif [ "$1" == "--yes" ]; then
         SKIP_PROMPTS=1
