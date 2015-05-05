@@ -164,22 +164,22 @@ download_info() {
 }
 
 extract_comments() {
-	IFS=$'\n' read -d '' -r -a COMMENTS_QUERY <<< "$( echo $EXTENSION_COMMENTS | cut -f1 --complement -d"[" | sed 's/, {/\n/g' )"
+    IFS=$'\n' read -d '' -r -a COMMENTS_QUERY <<< "$( echo $EXTENSION_COMMENTS | cut -f1 --complement -d"[" | sed 's/, {/\n/g' )"
 
-	for COMMENT in "${COMMENTS_QUERY[@]}"; do
-		COMMENT_AUTHOR=$( sed 's/^.*\"username\"[: \"]*\([^\"]*\).*$/\1/' <<< "$COMMENT" )
-		COMMENT_ISCREATOR=$( sed 's/^.*\"is_extension_creator\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$COMMENT" )
-		COMMENT_DATE=$( sed 's/^.*\"standard\"[: \"]*\([^\"]*\).*$/\1/' <<< "$COMMENT" )
-		COMMENT_RATING=$( sed 's/^.*\"rating\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$COMMENT" )
-		COMMENT_TEXT=$( sed 's/^.*\"comment\"[: \"]*\([^\"]*[^\r\n]*\).*$/\1/' <<< "$COMMENT" |
-		                sed 's/", ".*//g' | sed 's/\\"/"/g' )
-		echo -n "\e[1;34m$COMMENT_AUTHOR\e[0m$(if [ "$COMMENT_ISCREATOR" == "true" ]; then echo -n " [A]"; fi)"
-		echo " ($COMMENT_DATE):"
-		if [[ "$COMMENT_RATING" =~ ^[0-9]+$ ]]; then echo "Rating: $COMMENT_RATING"; fi
-		if [ "$COMMENT_TEXT" != "$COMMENT" ]; then echo "$COMMENT_TEXT"; fi
-		echo
-		unset COMMENT_AUTHOR COMMENT_ISCREATOR COMMENT_DATE COMMENT_RATING COMMENT_TEXT
-	done
+    for COMMENT in "${COMMENTS_QUERY[@]}"; do
+        COMMENT_AUTHOR=$( sed 's/^.*\"username\"[: \"]*\([^\"]*\).*$/\1/' <<< "$COMMENT" )
+        COMMENT_ISCREATOR=$( sed 's/^.*\"is_extension_creator\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$COMMENT" )
+        COMMENT_DATE=$( sed 's/^.*\"standard\"[: \"]*\([^\"]*\).*$/\1/' <<< "$COMMENT" )
+        COMMENT_RATING=$( sed 's/^.*\"rating\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$COMMENT" )
+        COMMENT_TEXT=$( sed 's/^.*\"comment\"[: \"]*\([^\"]*[^\r\n]*\).*$/\1/' <<< "$COMMENT" |
+                        sed 's/", ".*//g' | sed 's/\\"/"/g' )
+        echo -n "\e[1;34m$COMMENT_AUTHOR\e[0m$(if [ "$COMMENT_ISCREATOR" == "true" ]; then echo -n " [A]"; fi)"
+        echo " ($COMMENT_DATE):"
+        if [[ "$COMMENT_RATING" =~ ^[0-9]+$ ]]; then echo "Rating: $COMMENT_RATING"; fi
+        if [ "$COMMENT_TEXT" != "$COMMENT" ]; then echo "$COMMENT_TEXT"; fi
+        echo
+        unset COMMENT_AUTHOR COMMENT_ISCREATOR COMMENT_DATE COMMENT_RATING COMMENT_TEXT
+    done
 }
 
 download_comments() {
