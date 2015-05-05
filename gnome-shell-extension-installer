@@ -125,7 +125,7 @@ get_other_version() {
 
 extract_info() {
     EXTENSION_NAME=$( sed 's/^.*\"name\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
-    EXTENSION_DESCRIPTION=$( sed 's/^.*\"description\": \"//g' <<< "${EXTENSIONS_QUERY[$n]}" |
+    EXTENSION_DESCRIPTION=$( sed 's/^.*\"description\": \"//g' <<< "$1" |
                              sed 's/\", \"creator\".*$//g' |
                              sed 's/\\\"/\"/g' )
     EXTENSION_CREATOR=$( sed 's/^.*\"creator\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
@@ -139,7 +139,7 @@ extract_info() {
 }
 
 download_info() {
-    unset EXTENSION_INFO EXTENSIONS_QUERY
+    unset EXTENSION_INFO EXTENSIONS_QUERY EXTENSION_COMMENTS
     PAGES=-1
     TOTAL=-1
     EXTENSION_INFO=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
@@ -163,8 +163,51 @@ download_info() {
     esac
 }
 
+extract_comments() {
+	IFS=$'\n' read -d '' -r -a COMMENTS_QUERY <<< "$( echo $EXTENSION_COMMENTS | cut -f1 --complement -d"[" | sed 's/, {/\n/g' )"
+
+	for COMMENT in "${COMMENTS_QUERY[@]}"; do
+		COMMENT_AUTHOR=$( sed 's/^.*\"username\"[: \"]*\([^\"]*\).*$/\1/' <<< "$COMMENT" )
+		COMMENT_ISCREATOR=$( sed 's/^.*\"is_extension_creator\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$COMMENT" )
+		COMMENT_DATE=$( sed 's/^.*\"standard\"[: \"]*\([^\"]*\).*$/\1/' <<< "$COMMENT" )
+		COMMENT_RATING=$( sed 's/^.*\"rating\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$COMMENT" )
+		COMMENT_TEXT=$( sed 's/^.*\"comment\"[: \"]*\([^\"]*[^\r\n]*\).*$/\1/' <<< "$COMMENT" |
+		                sed 's/", ".*//g' | sed 's/\\"/"/g' )
+		echo -n "\e[1;34m$COMMENT_AUTHOR\e[0m$(if [ "$COMMENT_ISCREATOR" == "true" ]; then echo -n " [A]"; fi)"
+		echo " ($COMMENT_DATE):"
+		if [[ "$COMMENT_RATING" =~ ^[0-9]+$ ]]; then echo "Rating: $COMMENT_RATING"; fi
+		if [ "$COMMENT_TEXT" != "$COMMENT" ]; then echo "$COMMENT_TEXT"; fi
+		echo
+		unset COMMENT_AUTHOR COMMENT_ISCREATOR COMMENT_DATE COMMENT_RATING COMMENT_TEXT
+	done
+}
+
+download_comments() {
+    unset EXTENSION_COMMENTS
+    EXTENSION_COMMENTS=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
+    case "$?" in
+        0)
+            if [ "$( echo $EXTENSION_COMMENTS | grep comment )" ]; then
+                return 0
+            else
+                echo "$2"
+                return 2
+            fi
+            ;;
+        22)
+            echo -e "\e[0;31mERROR\e[0m: $3 could not be found" >&2
+            return 22
+            ;;
+        *)
+            echo -e "\e[0;31mERROR\e[0m: $4 (curl error $?)" >&2
+            return 1
+            ;;
+    esac
+}
+
 search_help() {
     echo -e "<number(s)>\tInstall extension(s)" \
+            "\nc<number>\tDisplay comments" \
             "\nd<number(s)>\tGet description(s)" \
             "\nl<number(s)>\tGet link(s) on extensions.gnome.org" \
             "\ns<number(s)>\tSave the extension(s) on the current directory"\
@@ -219,6 +262,24 @@ interactive_search() {
                     echo "[$n] Invalid extension number" >&2
                 fi
             done
+        elif [[ $COMMAND =~ ^c( )*[0-9]+$ ]]; then
+            if [[ ${COMMAND:1} -lt $TOTAL ]]; then
+                extract_info "${EXTENSIONS_QUERY[${COMMAND:1}]}"
+                echo "[$EXTENSION_NAME] Getting comments"
+                download_comments "/comments/all/?pk=$EXTENSION_ID&all=true" \
+                          "No comments to display" \
+                          "The page" \
+                          "Failed to get comments" &&
+                EXTENSION_COMMENTS=$( extract_comments )
+                if [[ $( echo -e "$EXTENSION_COMMENTS" | wc -l ) -gt 10 ]] &&
+                       [[ $( type less 2> "/dev/null" ) ]]; then
+                        less -R <<< "$( echo -e "[$EXTENSION_NAME]\n\n$EXTENSION_COMMENTS" )"
+                    else
+                        echo -e "\n$EXTENSION_COMMENTS\n"
+                    fi
+            else
+                echo "[$COMMAND] Invalid extension number" >&2
+            fi
         elif [[ $COMMAND =~ ^d([0-9 ])+$ ]]; then
             for n in ${COMMAND:1}; do
                 if [[ $n -lt $TOTAL ]]; then
