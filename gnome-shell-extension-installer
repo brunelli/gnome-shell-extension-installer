@@ -190,7 +190,7 @@ download_comments() {
             if [ "$( echo $EXTENSION_COMMENTS | grep comment )" ]; then
                 return 0
             else
-                echo "$2"
+                echo -e "\n$2\n"
                 return 2
             fi
             ;;
@@ -224,23 +224,23 @@ search_help() {
 }
 
 load_content() {
-    unset CONTENT
+    unset SEARCH_CONTENT
     PAGES=$( sed 's/^.*numpages[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
     TOTAL=$( sed 's/^.*total[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
-    echo "Displaying $TOTAL item(s). Page $PAGE_NUM of $PAGES.\n"
+    SEARCH_CONTENT=$( echo "Displaying $TOTAL item(s). Page $PAGE_NUM of $PAGES.\n")
     IFS=$'\n' read -d '' -r -a EXTENSIONS_QUERY <<< "$( echo $EXTENSION_INFO | cut -f1 --complement -d"[" | sed 's/{[\"]*shell_version_map[\"]*:/\n/g' )"
 
     COUNTER=0
     for EXTENSION in "${EXTENSIONS_QUERY[@]}"; do
         extract_info "$EXTENSION"
-        echo -n "$COUNTER: $EXTENSION_NAME, by $EXTENSION_CREATOR" \
-                "\n   Versions: "
+        SEARCH_CONTENT+=$( echo "\n$COUNTER: $EXTENSION_NAME, by $EXTENSION_CREATOR" \
+                          "\n   Versions: " )
         [[ "${EXTENSION_VERSIONS[@]}" ]] &&
-        echo "${EXTENSION_VERSIONS[@]}" ||
-        echo "(no version available)"
+        SEARCH_CONTENT+=$( echo "${EXTENSION_VERSIONS[@]}" ) ||
+        SEARCH_CONTENT+=$( echo "(no version available)" )
         (( COUNTER++ ))
     done
-    echo "\n"
+    SEARCH_CONTENT+=$( echo "\n" )
 }
 
 interactive_search() {
@@ -271,13 +271,13 @@ interactive_search() {
                           "No comments to display" \
                           "The page" \
                           "Failed to get comments" &&
-                EXTENSION_COMMENTS=$( extract_comments )
+              { EXTENSION_COMMENTS=$( extract_comments )
                 if [[ $( echo -e "$EXTENSION_COMMENTS" | wc -l ) -gt 10 ]] &&
                        [[ $( type less 2> "/dev/null" ) ]]; then
                         less -R <<< "$( echo -e "[$EXTENSION_NAME]\n\n$EXTENSION_COMMENTS" )"
-                    else
+                else
                         echo -e "\n$EXTENSION_COMMENTS\n"
-                    fi
+                fi }
             else
                 echo "[$COMMAND] Invalid extension number" >&2
             fi
@@ -333,8 +333,8 @@ interactive_search() {
                               "No items to display" \
                               "The page $PAGE_NUM" \
                               "Failed to obtain page info" &&
-                CONTENT=$( load_content )
-                echo -en "$CONTENT"
+                load_content &&
+                echo -e "$SEARCH_CONTENT"
             else
                 echo "[$PAGE] Invalid page number" >&2
             fi
@@ -354,8 +354,8 @@ interactive_search() {
                                 "No items to display" \
                                 "The page $PAGE_NUM" \
                                 "Failed to obtain page info" &&
-                  CONTENT=$( load_content )
-                  echo -en "$CONTENT"; }
+                  load_content &&
+                  echo -e "$SEARCH_CONTENT"; }
         elif [[ $COMMAND =~ ^(h|help)$ ]]; then
             search_help
         elif [[ $COMMAND =~ ^home$ ]]; then
@@ -365,12 +365,12 @@ interactive_search() {
                           "No items to display" \
                           "The page" \
                           "Failed to obtain page info" &&
-            CONTENT=$( load_content )
-            echo -en "$CONTENT"
+            load_content &&
+            echo -e "$SEARCH_CONTENT"
         elif [[ $COMMAND =~ ^r$ ]]; then
             [ $TOTAL -gt 0 ] &&
-            CONTENT=$( load_content )
-            echo -en "$CONTENT"
+            load_content &&
+            echo -e "$SEARCH_CONTENT"
         elif [[ $COMMAND =~ ^(exit|quit|q)$ ]]; then
             exit
         elif [[ $COMMAND =~ ^/ ]]; then
@@ -381,8 +381,8 @@ interactive_search() {
                               "No items to display" \
                               "The search page for \"$SEARCH_STRING\"" \
                               "Failed to obtain page info" &&
-                CONTENT=$( load_content )
-                echo -en "$CONTENT"
+                load_content &&
+                echo -e "$SEARCH_CONTENT"
             else
                 echo "No search string specified" >&2
             fi
@@ -437,8 +437,8 @@ while [ $COUNTER -gt 0 ]; do
                         "No items to display" \
                         "The search page for \"$SEARCH_STRING\"" \
                         "Failed to obtain page info" &&
-          CONTENT=$( load_content )
-          echo -en "$CONTENT"; }
+          load_content &&
+          echo -e "$SEARCH_CONTENT"; }
         interactive_search
     elif [ "$1" == "--yes" ]; then
         SKIP_PROMPTS=1
