@@ -241,6 +241,7 @@ load_content() {
         (( COUNTER++ ))
     done
     SEARCH_CONTENT+=$( echo "\n" )
+    echo -e "$SEARCH_CONTENT"
 }
 
 interactive_search() {
@@ -277,7 +278,7 @@ interactive_search() {
                         less -R <<< "$( echo -e "[$EXTENSION_NAME]\n\n$EXTENSION_COMMENTS" )"
                 else
                         echo -e "\n$EXTENSION_COMMENTS\n"
-                fi }
+                fi; }
             else
                 echo "[$COMMAND] Invalid extension number" >&2
             fi
@@ -333,8 +334,7 @@ interactive_search() {
                               "No items to display" \
                               "The page $PAGE_NUM" \
                               "Failed to obtain page info" &&
-                load_content &&
-                echo -e "$SEARCH_CONTENT"
+                load_content
             else
                 echo "[$PAGE] Invalid page number" >&2
             fi
@@ -354,8 +354,7 @@ interactive_search() {
                                 "No items to display" \
                                 "The page $PAGE_NUM" \
                                 "Failed to obtain page info" &&
-                  load_content &&
-                  echo -e "$SEARCH_CONTENT"; }
+                  load_content; }
         elif [[ $COMMAND =~ ^(h|help)$ ]]; then
             search_help
         elif [[ $COMMAND =~ ^home$ ]]; then
@@ -365,11 +364,9 @@ interactive_search() {
                           "No items to display" \
                           "The page" \
                           "Failed to obtain page info" &&
-            load_content &&
-            echo -e "$SEARCH_CONTENT"
+            load_content
         elif [[ $COMMAND =~ ^r$ ]]; then
             [ $TOTAL -gt 0 ] &&
-            load_content &&
             echo -e "$SEARCH_CONTENT"
         elif [[ $COMMAND =~ ^(exit|quit|q)$ ]]; then
             exit
@@ -381,8 +378,7 @@ interactive_search() {
                               "No items to display" \
                               "The search page for \"$SEARCH_STRING\"" \
                               "Failed to obtain page info" &&
-                load_content &&
-                echo -e "$SEARCH_CONTENT"
+                load_content
             else
                 echo "No search string specified" >&2
             fi
@@ -437,8 +433,7 @@ while [ $COUNTER -gt 0 ]; do
                         "No items to display" \
                         "The search page for \"$SEARCH_STRING\"" \
                         "Failed to obtain page info" &&
-          load_content &&
-          echo -e "$SEARCH_CONTENT"; }
+          load_content; }
         interactive_search
     elif [ "$1" == "--yes" ]; then
         SKIP_PROMPTS=1
