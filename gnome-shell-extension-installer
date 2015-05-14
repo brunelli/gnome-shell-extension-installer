@@ -53,8 +53,8 @@ enable_extension() {
 extract_extension() {
     mkdir -p "$EXTENSIONS_PATH/$2"
     echo "[$1] Extracting extension"
-    unzip -qq -o "/tmp/shell-extension-install.$3.zip" -d "$EXTENSIONS_PATH/$2"
-    rm -f "/tmp/shell-extension-install.$3.zip"
+    unzip -qq -o "/tmp/shell-$SELECTED_VERSION-extension-install.$3.zip" -d "$EXTENSIONS_PATH/$2"
+    rm -f "/tmp/shell-$SELECTED_VERSION-extension-install.$3.zip"
 }
 
 install_version() {
@@ -63,16 +63,16 @@ install_version() {
 }
 
 move_file() {
-    mv "/tmp/shell-extension-install.$EXTENSION_ID.zip" "$EXTENSION_UUID.shell-extension.zip" 2> /dev/null &&
+    mv "/tmp/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip" "$EXTENSION_UUID.shell-extension.zip" 2> /dev/null &&
     echo "[$EXTENSION_NAME] Extension saved as $EXTENSION_UUID.shell-extension.zip" ||
     echo -e "\e[0;31mERROR\e[0m: Failed to save file" >&2
-    rm -f "/tmp/shell-extension-install.$EXTENSION_ID.zip"
+    rm -f "/tmp/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip"
 }
 
 download_version() {
     DOWNLOAD_TARGET=$( sed "s/^.*$2\": {\"pk[\": ]*\([^\"]*\),.*$/\1/" <<< "$1" )
     echo "[$EXTENSION_NAME] Downloading extension"
-    if curl $DOWNLOAD_PARAMETERS -o "/tmp/shell-extension-install.$EXTENSION_ID.zip" \
+    if curl $DOWNLOAD_PARAMETERS -o "/tmp/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip" \
             "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET";
     then
         return 0
@@ -401,12 +401,12 @@ main_program() {
         else
             echo "[$EXTENSION_NAME] Extension not available for GNOME Shell $1"
             get_other_version "$1"
-        fi; } &&
+        fi } &&
       { if [ "$INSTALL" == "install" ]; then
             install_version
         else
             move_file
-        fi; }
+        fi }
     }
 }
 
@@ -414,13 +414,13 @@ GNOME_VERSION="$( grep -oP "[0-9]+\.[0-9]+" <<< "$( gnome-shell --version )" )"
 DOWNLOAD_PARAMETERS="-Lfs"
 EXTENSIONS_SITE="https://extensions.gnome.org"
 SORT="popularity"
-INSTALL="install"
 
 [[ $EUID -eq 0 ]] &&
 EXTENSIONS_PATH="/usr/share/gnome-shell/extensions" ||
 EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
 
 SCRIPT_NAME=$( basename "$0" )
+INSTALL="install"
 PAGES=-1
 TOTAL=-1
 
