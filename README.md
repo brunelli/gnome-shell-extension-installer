@@ -11,10 +11,10 @@ By default extensions are installed on `$HOME/.local/share/gnome-shell/extension
 Usage: gnome-shell-extension-installer EXTENSION_ID [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]
  
 Options: 
-  -s or --search [ STRING ]	Interactive search. 
-  --yes 			Skip all prompts. 
-  --no-install 			Saves the extensions in the current directory. 
-  -h or --help 			Print this message.
+  -s or --search  [ STRING ]	      Interactive search.
+  --yes                            Skip all prompts.
+  --no-install                     Saves the extension(s) in the current directory.
+  -h or --help                  			Print this message.
  
 Usage examples: 
   # Install "Small Panel Icon" for GNOME Shell 3.12 answering yes to all questions: 
