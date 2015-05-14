@@ -4,7 +4,7 @@
  #                                                                         #
  #                     GNOME Shell Extension Installer                     #
  #                                                                         #
- #   Version: 1.4 (05/05/2015)                                             #
+ #   Version: 1.4.1 (14/05/2015)                                           #
  #   Author: Ian Brunelli <ian@brunelli.me>                                #
  #   URL: https://github.com/ianbrunelli/gnome-shell-extension-installer   #
  #                                                                         #
@@ -15,7 +15,7 @@ usage_guide() {
             "\nOptions:" \
             "\n  -s or --search [ STRING ]\tInteractive search." \
             "\n  --yes \t\t\tSkip all prompts." \
-            "\n  --no-install \t\t\tSaves the extensions in the current directory." \
+            "\n  --no-install \t\t\tSaves the extension(s) in the current directory." \
             "\n  -h or --help \t\t\tPrint this message.\n" \
             "\nUsage examples:" \
             "\n  # Install \"Small Panel Icon\" for GNOME Shell 3.12 answering yes to all questions:" \
