@@ -8,18 +8,19 @@ By default extensions are installed on `$HOME/.local/share/gnome-shell/extension
 ## Help
 
 ```
-Usage: gnome-shell-extension-installer [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]
+Usage: gnome-shell-extension-installer EXTENSION_ID [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]
  
-Options:
-  -s or --search [ STRING ]	Interactive search.
-  --yes 		        	Skip all prompts (don't affect search).
-  -h or --help 			    Print this message.
-
-Usage examples:
-  # Install "Small Panel Icon" for GNOME Shell 3.12 answering yes to all questions:
+Options: 
+  -s or --search [ STRING ]	Interactive search. 
+  --yes 			Skip all prompts. 
+  --no-install 			Saves the extensions in the current directory. 
+  -h or --help 			Print this message.
+ 
+Usage examples: 
+  # Install "Small Panel Icon" for GNOME Shell 3.12 answering yes to all questions: 
   gnome-shell-extension-installer 861 3.12 --yes
-
-  # Search for extensions matching "User Themes":
+ 
+  # Search for extensions matching "User Themes": 
   gnome-shell-extension-installer -s "User Themes"
 ```
 
