@@ -83,6 +83,7 @@ download_version() {
 }
 
 check_version_availability() {
+    unset SELECTED_VERSION
     for VERSION in ${EXTENSION_VERSIONS[@]}; do
         [ "$1" == "$VERSION" ] &&
         SELECTED_VERSION="$1"
@@ -90,7 +91,6 @@ check_version_availability() {
 }
 
 select_version() {
-    unset SELECTED_VERSION
     if [[ "${EXTENSION_VERSIONS[0]}" ]]; then
         while [[ ! $SELECTED_VERSION ]]; do
            echo -n $1"Type a version to $2: "
