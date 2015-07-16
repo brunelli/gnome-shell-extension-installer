@@ -489,11 +489,9 @@ if [ $# -gt 0 ]; then
         echo "${#INSTALLED[@]} extension(s) installed."
         if [ $RESTART == 1 ]; then
             echo "Restarting GNOME Shell..."
-            gdbus call --session \
-                       --dest org.gnome.Shell \
-                       --object-path /org/gnome/Shell \
-                       --method org.gnome.Shell.Eval "global.reexec_self();" \
-            2> /dev/null
+            dbus-send --session --type=method_call \
+                      --dest=org.gnome.Shell /org/gnome/Shell \
+                      org.gnome.Shell.Eval string:"global.reexec_self();"
         fi
     fi
 else
