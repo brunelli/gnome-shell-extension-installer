@@ -14,6 +14,7 @@ Options:
   -s or --search  [ STRING ]       Interactive search.
   --yes                            Skip all prompts.
   --no-install                     Saves the extension(s) in the current directory.
+  --restart-shell                  Restart GNOME Shell after the extensions are installed.
   -h or --help                     Print this message.
  
 Usage examples: 
