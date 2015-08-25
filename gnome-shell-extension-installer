@@ -43,7 +43,7 @@ check_version_validation() {
 enable_extension() {
     ENABLED_EXTENSIONS=$( gsettings get org.gnome.shell enabled-extensions |
                           cut -f 1 -d "[" --complement )
-    if [ $RESTART == 0 ]; then
+    if [[ $RESTART == 0 ]]; then
         RESTART_MESSAGE=" (you may have to restart GNOME Shell)"
     fi
     [ "$( grep -v "$2" <<< "$ENABLED_EXTENSIONS" )" ] &&
@@ -487,7 +487,7 @@ if [ $# -gt 0 ]; then
     done
     if [ ${#INSTALLED[@]} -gt 0 ]; then
         echo "${#INSTALLED[@]} extension(s) installed."
-        if [ $RESTART == 1 ]; then
+        if [[ $RESTART == 1 ]]; then
             echo "Restarting GNOME Shell..."
             dbus-send --session --type=method_call \
                       --dest=org.gnome.Shell /org/gnome/Shell \
