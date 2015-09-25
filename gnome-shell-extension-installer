@@ -249,6 +249,13 @@ load_content() {
     echo -e "$SEARCH_CONTENT"
 }
 
+restart_shell() {
+    echo "Restarting GNOME Shell..."
+    dbus-send --session --type=method_call \
+              --dest=org.gnome.Shell /org/gnome/Shell \
+              org.gnome.Shell.Eval string:"global.reexec_self();"
+}
+
 interactive_search() {
     echo -e "Type \"help\" to get information on how to use the search."
     while [[ ! $EXIT ]]; do
@@ -374,6 +381,11 @@ interactive_search() {
             [ $TOTAL -gt 0 ] &&
             echo -e "$SEARCH_CONTENT"
         elif [[ $COMMAND =~ ^(exit|quit|q)$ ]]; then
+            if [ ${#INSTALLED[@]} -gt 0 ]; then
+                echo -n "${#INSTALLED[@]} extension(s) installed. Restart shell? (y/N) "
+                read RESTART
+                [[ $RESTART =~ ^(y|Y) ]] && restart_shell
+            fi
             exit
         elif [[ $COMMAND =~ ^/ ]]; then
             if [ "${COMMAND:1}" ]; then
@@ -488,10 +500,7 @@ if [ $# -gt 0 ]; then
     if [ ${#INSTALLED[@]} -gt 0 ]; then
         echo "${#INSTALLED[@]} extension(s) installed."
         if [[ $RESTART == 1 ]]; then
-            echo "Restarting GNOME Shell..."
-            dbus-send --session --type=method_call \
-                      --dest=org.gnome.Shell /org/gnome/Shell \
-                      org.gnome.Shell.Eval string:"global.reexec_self();"
+            restart_shell
         fi
     fi
 else
