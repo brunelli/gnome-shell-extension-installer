@@ -11,18 +11,23 @@
  ###########################################################################
 
 usage_guide() {
-    echo -e "Usage: $SCRIPT_NAME EXTENSION_ID [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]\n" \
-            "\nOptions:" \
-            "\n  -s or --search [ STRING ]\tInteractive search." \
-            "\n  --yes \t\t\tSkip all prompts." \
-            "\n  --no-install \t\t\tSaves the extension(s) in the current directory." \
-            "\n  --restart-shell \t\tRestart GNOME Shell after the extensions are installed." \
-            "\n  -h or --help \t\t\tPrint this message.\n" \
-            "\nUsage examples:" \
-            "\n  # Install \"Small Panel Icon\" for GNOME Shell 3.12 answering yes to all questions:" \
-            "\n  $SCRIPT_NAME 861 3.12 --yes\n" \
-            "\n  # Search for extensions matching \"User Themes\":" \
-            "\n  $SCRIPT_NAME -s \"User Themes\""
+  cat << EOF
+Usage: $SCRIPT_NAME EXTENSION_ID [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]
+
+Options:
+  -s or --search [ STRING ]	Interactive search.
+  --yes 			Skip all prompts.
+  --no-install 			Saves the extension(s) in the current directory.
+  --restart-shell 		Restart GNOME Shell after the extensions are installed.
+  -h or --help 			Print this message.
+
+Usage examples:
+  # Install "Small Panel Icon" for GNOME Shell 3.12 answering yes to all questions:
+  $SCRIPT_NAME 861 3.12 --yes
+
+  # Search for extensions matching "User Themes":
+  $SCRIPT_NAME -s "User Themes"
+EOF
 }
 
 check_version_validation() {
@@ -211,21 +216,23 @@ download_comments() {
 }
 
 search_help() {
-    echo -e "<number(s)>\tInstall extension(s)" \
-            "\nc<number>\tDisplay comments" \
-            "\nd<number(s)>\tGet description(s)" \
-            "\nl<number(s)>\tGet link(s) on extensions.gnome.org" \
-            "\ns<number(s)>\tSave the extension(s) on the current directory"\
-            "\np<number>\tGo to page" \
-            "\nr\t\tPrint the search content again" \
-            "\nsn\t\tSort by name" \
-            "\nsr\t\tSort by recent" \
-            "\nsd\t\tSort by downloads" \
-            "\nsp\t\tSort by popularity (default)" \
-            "\n/<string>\tPerform another search" \
-            "\nhome\t\tLoad extensions.gnome.org homepage" \
-            "\nh or help\tShow this message" \
-            "\nq or quit\tExit search shell"
+  cat << EOF
+<number(s)>	Install extension(s)
+c<number>	Display comments
+d<number(s)>	Get description(s)
+l<number(s)>	Get link(s) on extensions.gnome.org
+s<number(s)>	Save the extension(s) on the current directory
+p<number>	Go to page
+r		Print the search content again
+sn		Sort by name
+sr		Sort by recent
+sd		Sort by downloads
+sp		Sort by popularity (default)
+/<string>	Perform another search
+home		Load extensions.gnome.org homepage
+h or help	Show this message
+q or quit	Exit search shell
+EOF
 }
 
 load_content() {
