@@ -31,188 +31,188 @@ EOF
 }
 
 check_version_validation() {
-    DISABLE_VERSION_VALIDATION=$( gsettings get org.gnome.shell disable-extension-version-validation )
-    [ "$DISABLE_VERSION_VALIDATION" == "true" ] ||
-    { echo -en "\nExtension version validation is enabled on GNOME Shell." \
-               "\nTo use extensions older than the current version of Shell, you have to disable it." \
-               "\nDo it now (y/N)? "
-      [ $SKIP_PROMPTS ] &&
-      { echo "yes"
-        DO_IT="yes"; } ||
-      read DO_IT
-      [[ ${DO_IT::1} =~ (y|Y) ]] &&
-      gsettings set org.gnome.shell disable-extension-version-validation true &&
-      echo -e "\nThe extension version validation has been disabled."; }
+  DISABLE_VERSION_VALIDATION=$( gsettings get org.gnome.shell disable-extension-version-validation )
+  [ "$DISABLE_VERSION_VALIDATION" == "true" ] ||
+  { echo -en "\nExtension version validation is enabled on GNOME Shell." \
+             "\nTo use extensions older than the current version of Shell, you have to disable it." \
+             "\nDo it now (y/N)? "
+    [ $SKIP_PROMPTS ] &&
+    { echo "yes"
+      DO_IT="yes"; } ||
+    read DO_IT
+    [[ ${DO_IT::1} =~ (y|Y) ]] &&
+    gsettings set org.gnome.shell disable-extension-version-validation true &&
+    echo -e "\nThe extension version validation has been disabled."; }
 }
 
 enable_extension() {
-    ENABLED_EXTENSIONS=$( gsettings get org.gnome.shell enabled-extensions |
-                          cut -f 1 -d "[" --complement )
-    if [[ $RESTART == 0 ]]; then
-        RESTART_MESSAGE=" (you may have to restart GNOME Shell)"
-    fi
-    [ "$( grep -v "$2" <<< "$ENABLED_EXTENSIONS" )" ] &&
-    { echo "[$1] Enabling extension"
-      [[ ${ENABLED_EXTENSIONS%?} ]] && SEPARATOR=", "
-      gsettings set org.gnome.shell enabled-extensions "[${ENABLED_EXTENSIONS%?}$SEPARATOR'$2']" &&
-      echo "[$1] Extension enabled$RESTART_MESSAGE"; } ||
-    echo "[$1] The extension is already enabled"
+  ENABLED_EXTENSIONS=$( gsettings get org.gnome.shell enabled-extensions |
+                        cut -f 1 -d "[" --complement )
+  if [[ $RESTART == 0 ]]; then
+    RESTART_MESSAGE=" (you may have to restart GNOME Shell)"
+  fi
+  [ "$( grep -v "$2" <<< "$ENABLED_EXTENSIONS" )" ] &&
+  { echo "[$1] Enabling extension"
+    [[ ${ENABLED_EXTENSIONS%?} ]] && SEPARATOR=", "
+    gsettings set org.gnome.shell enabled-extensions "[${ENABLED_EXTENSIONS%?}$SEPARATOR'$2']" &&
+    echo "[$1] Extension enabled$RESTART_MESSAGE"; } ||
+  echo "[$1] The extension is already enabled"
 }
 
 extract_extension() {
-    mkdir -p "$EXTENSIONS_PATH/$2"
-    echo "[$1] Extracting extension"
-    unzip -qq -o "/tmp/shell-$SELECTED_VERSION-extension-install.$3.zip" -d "$EXTENSIONS_PATH/$2"
-    rm -f "/tmp/shell-$SELECTED_VERSION-extension-install.$3.zip"
+  mkdir -p "$EXTENSIONS_PATH/$2"
+  echo "[$1] Extracting extension"
+  unzip -qq -o "/tmp/shell-$SELECTED_VERSION-extension-install.$3.zip" -d "$EXTENSIONS_PATH/$2"
+  rm -f "/tmp/shell-$SELECTED_VERSION-extension-install.$3.zip"
 }
 
 install_version() {
-    extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
-    enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID" &&
-    INSTALLED+=("$EXTENSION_ID")
+  extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
+  enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID" &&
+  INSTALLED+=("$EXTENSION_ID")
 }
 
 move_file() {
-    mv "/tmp/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip" "$EXTENSION_UUID.shell-extension.zip" 2> /dev/null &&
-    echo "[$EXTENSION_NAME] Extension saved as $EXTENSION_UUID.shell-extension.zip" ||
-    echo -e "\e[0;31mERROR\e[0m: Failed to save file" >&2
-    rm -f "/tmp/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip"
+  mv "/tmp/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip" "$EXTENSION_UUID.shell-extension.zip" 2> /dev/null &&
+  echo "[$EXTENSION_NAME] Extension saved as $EXTENSION_UUID.shell-extension.zip" ||
+  echo -e "\e[0;31mERROR\e[0m: Failed to save file" >&2
+  rm -f "/tmp/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip"
 }
 
 download_version() {
-    DOWNLOAD_TARGET=$( sed "s/^.*$2\": {\"pk[\": ]*\([^\"]*\),.*$/\1/" <<< "$1" )
-    echo "[$EXTENSION_NAME] Downloading extension"
-    if curl $DOWNLOAD_PARAMETERS -o "/tmp/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip" \
-            "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET";
-    then
-        return 0
-    else
-        echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
-        return 1
-    fi
+  DOWNLOAD_TARGET=$( sed "s/^.*$2\": {\"pk[\": ]*\([^\"]*\),.*$/\1/" <<< "$1" )
+  echo "[$EXTENSION_NAME] Downloading extension"
+  if curl $DOWNLOAD_PARAMETERS -o "/tmp/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip" \
+          "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET"
+  then
+    return 0
+  else
+    echo -e "\e[0;31mERROR\e[0m: Failed to download extension" >&2
+    return 1
+  fi
 }
 
 check_version_availability() {
-    unset SELECTED_VERSION
-    for VERSION in ${EXTENSION_VERSIONS[@]}; do
-        [ "$1" == "$VERSION" ] &&
-        SELECTED_VERSION="$1"
-    done
+  unset SELECTED_VERSION
+  for VERSION in ${EXTENSION_VERSIONS[@]}; do
+    [ "$1" == "$VERSION" ] &&
+    SELECTED_VERSION="$1"
+  done
 }
 
 select_version() {
-    if [[ "${EXTENSION_VERSIONS[0]}" ]]; then
-        while [[ ! $SELECTED_VERSION ]]; do
-           echo -n $1"Type a version to $2: "
-           if [[ ! $SKIP_PROMPTS ]]; then
-               read INPUT
-               check_version_availability "$INPUT"
-               [[ $INPUT =~ (q|quit|exit) ]] && return 1
-               [[ ! $SELECTED_VERSION ]] &&
-               echo "Available versions: ${EXTENSION_VERSIONS[@]}"
-           else
-               echo "${EXTENSION_VERSIONS[0]}"
-               SELECTED_VERSION="${EXTENSION_VERSIONS[0]}"
-           fi
-        done
-    else
-        echo $1"No version available"
-    fi
+  if [[ "${EXTENSION_VERSIONS[0]}" ]]; then
+    while [[ ! $SELECTED_VERSION ]]; do
+      echo -n $1"Type a version to $2: "
+      if [[ ! $SKIP_PROMPTS ]]; then
+        read INPUT
+        check_version_availability "$INPUT"
+        [[ $INPUT =~ (q|quit|exit) ]] && return 1
+        [[ ! $SELECTED_VERSION ]] &&
+        echo "Available versions: ${EXTENSION_VERSIONS[@]}"
+      else
+        echo "${EXTENSION_VERSIONS[0]}"
+        SELECTED_VERSION="${EXTENSION_VERSIONS[0]}"
+      fi
+    done
+  else
+    echo $1"No version available"
+  fi
 }
 
 get_other_version() {
-    [ "$EXTENSION_VERSIONS" ] &&
-    { echo -e "\nThis extension is available for the following versions of GNOME Shell:"
-      for VERSION in ${EXTENSION_VERSIONS[@]}; do
-          echo "- $VERSION"
-      done
-      select_version "" "$INSTALL"; }
-    echo
-    [ "$SELECTED_VERSION" ] &&
-    check_version_validation &&
-    download_version "$EXTENSION_INFO" "$SELECTED_VERSION"
+  [ "$EXTENSION_VERSIONS" ] &&
+  { echo -e "\nThis extension is available for the following versions of GNOME Shell:"
+    for VERSION in ${EXTENSION_VERSIONS[@]}; do
+      echo "- $VERSION"
+    done
+    select_version "" "$INSTALL"; }
+  echo
+  [ "$SELECTED_VERSION" ] &&
+  check_version_validation &&
+  download_version "$EXTENSION_INFO" "$SELECTED_VERSION"
 }
 
 extract_info() {
-    EXTENSION_NAME=$( sed 's/^.*\"name\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
-    EXTENSION_DESCRIPTION=$( sed 's/^.*\"description\": \"//g' <<< "$1" |
-                             sed 's/\", \"creator\".*$//g' |
-                             sed 's/\\\"/\"/g' )
-    EXTENSION_CREATOR=$( sed 's/^.*\"creator\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
-    EXTENSION_UUID=$( sed 's/^.*\"uuid\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
-    EXTENSION_ID=$( sed 's/^.*\"pk\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$1" )
-    EXTENSION_LINK=$( sed 's/^.*\"link\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
-    EXTENSION_URL=$( grep "download_url" <<< "$1" |
-                     sed 's/^.*\"download_url\"[: \"]*\([^\"]*\).*$/\1/' )
-    EXTENSION_VERSIONS=($( sed 's/[\"]*:[ ]*{[\"]*pk[\"]*:/\n/g' <<< "$1" |
-                           sed '$ d' | sed 's/^.*\"//g' | sort -rV ))
+  EXTENSION_NAME=$( sed 's/^.*\"name\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
+  EXTENSION_DESCRIPTION=$( sed 's/^.*\"description\": \"//g' <<< "$1" |
+                           sed 's/\", \"creator\".*$//g' |
+                           sed 's/\\\"/\"/g' )
+  EXTENSION_CREATOR=$( sed 's/^.*\"creator\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
+  EXTENSION_UUID=$( sed 's/^.*\"uuid\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
+  EXTENSION_ID=$( sed 's/^.*\"pk\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$1" )
+  EXTENSION_LINK=$( sed 's/^.*\"link\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
+  EXTENSION_URL=$( grep "download_url" <<< "$1" |
+                   sed 's/^.*\"download_url\"[: \"]*\([^\"]*\).*$/\1/' )
+  EXTENSION_VERSIONS=($( sed 's/[\"]*:[ ]*{[\"]*pk[\"]*:/\n/g' <<< "$1" |
+                         sed '$ d' | sed 's/^.*\"//g' | sort -rV ))
 }
 
 download_info() {
-    unset EXTENSION_INFO EXTENSIONS_QUERY EXTENSION_COMMENTS
-    PAGES=-1
-    TOTAL=-1
-    EXTENSION_INFO=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
-    case "$?" in
-        0)
-            if [ "$( echo $EXTENSION_INFO | grep name )" ]; then
-                return 0
-            else
-                echo -e "\e[0;31mERROR\e[0m: $2" >&2
-                return 2
-            fi
-            ;;
-        22)
-            echo -e "\e[0;31mERROR\e[0m: $3 could not be found" >&2
-            return 22
-            ;;
-        *)
-            echo -e "\e[0;31mERROR\e[0m: $4 (curl error $?)" >&2
-            return 1
-            ;;
-    esac
+  unset EXTENSION_INFO EXTENSIONS_QUERY EXTENSION_COMMENTS
+  PAGES=-1
+  TOTAL=-1
+  EXTENSION_INFO=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
+  case "$?" in
+    0)
+      if [ "$( echo $EXTENSION_INFO | grep name )" ]; then
+        return 0
+      else
+        echo -e "\e[0;31mERROR\e[0m: $2" >&2
+        return 2
+      fi
+      ;;
+    22)
+      echo -e "\e[0;31mERROR\e[0m: $3 could not be found" >&2
+      return 22
+      ;;
+    *)
+      echo -e "\e[0;31mERROR\e[0m: $4 (curl error $?)" >&2
+      return 1
+      ;;
+  esac
 }
 
 extract_comments() {
-    IFS=$'\n' read -d '' -r -a COMMENTS_QUERY <<< "$( echo $EXTENSION_COMMENTS | cut -f1 --complement -d"[" | sed 's/, {/\n/g' )"
+  IFS=$'\n' read -d '' -r -a COMMENTS_QUERY <<< "$( echo $EXTENSION_COMMENTS | cut -f1 --complement -d"[" | sed 's/, {/\n/g' )"
 
-    for COMMENT in "${COMMENTS_QUERY[@]}"; do
-        COMMENT_AUTHOR=$( sed 's/^.*\"username\"[: \"]*\([^\"]*\).*$/\1/' <<< "$COMMENT" )
-        COMMENT_ISCREATOR=$( sed 's/^.*\"is_extension_creator\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$COMMENT" )
-        COMMENT_DATE=$( sed 's/^.*\"standard\"[: \"]*\([^\"]*\).*$/\1/' <<< "$COMMENT" )
-        COMMENT_RATING=$( sed 's/^.*\"rating\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$COMMENT" )
-        COMMENT_TEXT=$( sed 's/^.*\"comment\"[: \"]*\([^\"]*[^\r\n]*\).*$/\1/' <<< "$COMMENT" |
-                        sed 's/", ".*//g' | sed 's/\\"/"/g' )
-        echo -n "\e[1;34m$COMMENT_AUTHOR\e[0m$(if [ "$COMMENT_ISCREATOR" == "true" ]; then echo -n " [A]"; fi)"
-        echo " ($COMMENT_DATE):"
-        if [[ "$COMMENT_RATING" =~ ^[0-9]+$ ]]; then echo "Rating: $COMMENT_RATING"; fi
-        if [ "$COMMENT_TEXT" != "$COMMENT" ]; then echo "$COMMENT_TEXT"; fi
-        echo
-        unset COMMENT_AUTHOR COMMENT_ISCREATOR COMMENT_DATE COMMENT_RATING COMMENT_TEXT
-    done
+  for COMMENT in "${COMMENTS_QUERY[@]}"; do
+    COMMENT_AUTHOR=$( sed 's/^.*\"username\"[: \"]*\([^\"]*\).*$/\1/' <<< "$COMMENT" )
+    COMMENT_ISCREATOR=$( sed 's/^.*\"is_extension_creator\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$COMMENT" )
+    COMMENT_DATE=$( sed 's/^.*\"standard\"[: \"]*\([^\"]*\).*$/\1/' <<< "$COMMENT" )
+    COMMENT_RATING=$( sed 's/^.*\"rating\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$COMMENT" )
+    COMMENT_TEXT=$( sed 's/^.*\"comment\"[: \"]*\([^\"]*[^\r\n]*\).*$/\1/' <<< "$COMMENT" |
+                    sed 's/", ".*//g' | sed 's/\\"/"/g' )
+    echo -n "\e[1;34m$COMMENT_AUTHOR\e[0m$(if [ "$COMMENT_ISCREATOR" == "true" ]; then echo -n " [A]"; fi)"
+    echo " ($COMMENT_DATE):"
+    if [[ "$COMMENT_RATING" =~ ^[0-9]+$ ]]; then echo "Rating: $COMMENT_RATING"; fi
+    if [ "$COMMENT_TEXT" != "$COMMENT" ]; then echo "$COMMENT_TEXT"; fi
+    echo
+    unset COMMENT_AUTHOR COMMENT_ISCREATOR COMMENT_DATE COMMENT_RATING COMMENT_TEXT
+  done
 }
 
 download_comments() {
-    unset EXTENSION_COMMENTS
-    EXTENSION_COMMENTS=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
-    case "$?" in
-        0)
-            if [ "$( echo $EXTENSION_COMMENTS | grep comment )" ]; then
-                return 0
-            else
-                echo -e "\n$2\n"
-                return 2
-            fi
-            ;;
-        22)
-            echo -e "\e[0;31mERROR\e[0m: $3 could not be found" >&2
-            return 22
-            ;;
-        *)
-            echo -e "\e[0;31mERROR\e[0m: $4 (curl error $?)" >&2
-            return 1
-            ;;
-    esac
+  unset EXTENSION_COMMENTS
+  EXTENSION_COMMENTS=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
+  case "$?" in
+    0)
+      if [ "$( echo $EXTENSION_COMMENTS | grep comment )" ]; then
+        return 0
+      else
+        echo -e "\n$2\n"
+        return 2
+      fi
+      ;;
+    22)
+      echo -e "\e[0;31mERROR\e[0m: $3 could not be found" >&2
+      return 22
+      ;;
+    *)
+      echo -e "\e[0;31mERROR\e[0m: $4 (curl error $?)" >&2
+      return 1
+      ;;
+  esac
 }
 
 search_help() {
@@ -236,202 +236,202 @@ EOF
 }
 
 load_content() {
-    unset SEARCH_CONTENT
-    PAGES=$( sed 's/^.*numpages[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
-    TOTAL=$( sed 's/^.*total[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
-    SEARCH_CONTENT=$( echo "Displaying $TOTAL item(s). Page $PAGE_NUM of $PAGES.\n")
-    IFS=$'\n' read -d '' -r -a EXTENSIONS_QUERY <<< "$( echo $EXTENSION_INFO | cut -f1 --complement -d"[" | sed 's/{[\"]*shell_version_map[\"]*:/\n/g' )"
+  unset SEARCH_CONTENT
+  PAGES=$( sed 's/^.*numpages[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
+  TOTAL=$( sed 's/^.*total[\": ]*\([^\"]*\),.*$/\1/' <<< "$EXTENSION_INFO" )
+  SEARCH_CONTENT=$( echo "Displaying $TOTAL item(s). Page $PAGE_NUM of $PAGES.\n")
+  IFS=$'\n' read -d '' -r -a EXTENSIONS_QUERY <<< "$( echo $EXTENSION_INFO | cut -f1 --complement -d"[" | sed 's/{[\"]*shell_version_map[\"]*:/\n/g' )"
 
-    COUNTER=0
-    for EXTENSION in "${EXTENSIONS_QUERY[@]}"; do
-        extract_info "$EXTENSION"
-        SEARCH_CONTENT+=$( echo "\n$COUNTER: $EXTENSION_NAME, by $EXTENSION_CREATOR" \
-                          "\n   Versions: " )
-        [[ "${EXTENSION_VERSIONS[@]}" ]] &&
-        SEARCH_CONTENT+=$( echo "${EXTENSION_VERSIONS[@]}" ) ||
-        SEARCH_CONTENT+=$( echo "(no version available)" )
-        (( COUNTER++ ))
-    done
-    SEARCH_CONTENT+=$( echo "\n" )
-    echo -e "$SEARCH_CONTENT"
+  COUNTER=0
+  for EXTENSION in "${EXTENSIONS_QUERY[@]}"; do
+    extract_info "$EXTENSION"
+    SEARCH_CONTENT+=$( echo "\n$COUNTER: $EXTENSION_NAME, by $EXTENSION_CREATOR" \
+                       "\n   Versions: " )
+    [[ "${EXTENSION_VERSIONS[@]}" ]] &&
+    SEARCH_CONTENT+=$( echo "${EXTENSION_VERSIONS[@]}" ) ||
+    SEARCH_CONTENT+=$( echo "(no version available)" )
+    (( COUNTER++ ))
+  done
+  SEARCH_CONTENT+=$( echo "\n" )
+  echo -e "$SEARCH_CONTENT"
 }
 
 restart_shell() {
-    echo "Restarting GNOME Shell..."
-    dbus-send --session --type=method_call \
-              --dest=org.gnome.Shell /org/gnome/Shell \
-              org.gnome.Shell.Eval string:"global.reexec_self();"
+  echo "Restarting GNOME Shell..."
+  dbus-send --session --type=method_call \
+            --dest=org.gnome.Shell /org/gnome/Shell \
+            org.gnome.Shell.Eval string:"global.reexec_self();"
 }
 
 interactive_search() {
-    echo -e "Type \"help\" to get information on how to use the search."
-    while [[ ! $EXIT ]]; do
-        echo -n "Enter a command: "
-        read COMMAND
-        if [[ $COMMAND =~ ^[0-9]+( |[0-9])*$ ]]; then
-            for n in $COMMAND; do
-                if extract_info "${EXTENSIONS_QUERY[$n]}" && [ $n -lt $TOTAL ]; then
-                    [[ ${#EXTENSION_VERSIONS[@]} == 1 ]] &&
-                    SELECTED_VERSION="${EXTENSION_VERSIONS[@]}"
-                    check_version_availability "$GNOME_VERSION"
-                    [ "$SELECTED_VERSION" ] ||
-                    select_version "[$EXTENSION_NAME] " "install"
-                    [ "$SELECTED_VERSION" ] &&
-                    download_version "${EXTENSIONS_QUERY[$n]}" "$SELECTED_VERSION" &&
-                    install_version
-                else
-                    echo "[$n] Invalid extension number" >&2
-                fi
-            done
-        elif [[ $COMMAND =~ ^c( )*[0-9]+$ ]]; then
-            if [[ ${COMMAND:1} -lt $TOTAL ]]; then
-                extract_info "${EXTENSIONS_QUERY[${COMMAND:1}]}"
-                echo "[$EXTENSION_NAME] Getting comments"
-                download_comments "/comments/all/?pk=$EXTENSION_ID&all=true" \
+  echo -e "Type \"help\" to get information on how to use the search."
+  while [[ ! $EXIT ]]; do
+    echo -n "Enter a command: "
+    read COMMAND
+    if [[ $COMMAND =~ ^[0-9]+( |[0-9])*$ ]]; then
+      for n in $COMMAND; do
+        if extract_info "${EXTENSIONS_QUERY[$n]}" && [ $n -lt $TOTAL ]; then
+          [[ ${#EXTENSION_VERSIONS[@]} == 1 ]] &&
+          SELECTED_VERSION="${EXTENSION_VERSIONS[@]}"
+          check_version_availability "$GNOME_VERSION"
+          [ "$SELECTED_VERSION" ] ||
+          select_version "[$EXTENSION_NAME] " "install"
+          [ "$SELECTED_VERSION" ] &&
+          download_version "${EXTENSIONS_QUERY[$n]}" "$SELECTED_VERSION" &&
+          install_version
+        else
+          echo "[$n] Invalid extension number" >&2
+        fi
+      done
+    elif [[ $COMMAND =~ ^c( )*[0-9]+$ ]]; then
+      if [[ ${COMMAND:1} -lt $TOTAL ]]; then
+        extract_info "${EXTENSIONS_QUERY[${COMMAND:1}]}"
+        echo "[$EXTENSION_NAME] Getting comments"
+        download_comments "/comments/all/?pk=$EXTENSION_ID&all=true" \
                           "No comments to display" \
                           "The page" \
                           "Failed to get comments" &&
-              { EXTENSION_COMMENTS=$( extract_comments )
-                if [[ $( echo -e "$EXTENSION_COMMENTS" | wc -l ) -gt 10 ]] &&
-                       [[ $( type less 2> "/dev/null" ) ]]; then
-                        less -R <<< "$( echo -e "[$EXTENSION_NAME]\n\n$EXTENSION_COMMENTS" )"
-                else
-                        echo -e "\n$EXTENSION_COMMENTS\n"
-                fi; }
-            else
-                echo "[$COMMAND] Invalid extension number" >&2
-            fi
-        elif [[ $COMMAND =~ ^d([0-9 ])+$ ]]; then
-            for n in ${COMMAND:1}; do
-                if [[ $n -lt $TOTAL ]]; then
-                    extract_info "${EXTENSIONS_QUERY[$n]}"
-                    if [[ $( echo -e "$EXTENSION_DESCRIPTION" | wc -l ) -gt 10 ]] &&
-                       [[ $( type less 2> "/dev/null" ) ]]; then
-                        less <<< "$( echo -e "[$EXTENSION_NAME]\n$EXTENSION_DESCRIPTION" )"
-                    else
-                        echo -e "[$EXTENSION_NAME]\n$EXTENSION_DESCRIPTION"
-                    fi
-                else
-                    echo "[$n] Invalid extension number" >&2
-                fi
-            done
-        elif [[ $COMMAND =~ ^l([0-9 ])+$ ]]; then
-            for n in ${COMMAND:1}; do
-                if [[ $n -lt $TOTAL ]]; then
-                    extract_info "${EXTENSIONS_QUERY[$n]}" &&
-                    echo "[$EXTENSION_NAME] $EXTENSIONS_SITE$EXTENSION_LINK" ||
-                    echo "[$n] Invalid extension number" >&2
-                else
-                    echo "[$n] Invalid extension number" >&2
-                fi
-            done
-        elif [[ $COMMAND =~ ^s([0-9 ])+$ ]]; then
-            for n in $COMMAND; do
-                for n in ${COMMAND:1}; do
-                    if extract_info "${EXTENSIONS_QUERY[$n]}" && [ $n -lt $TOTAL ]; then
-                        [[ ${#EXTENSION_VERSIONS[@]} == 1 ]] &&
-                        SELECTED_VERSION="${EXTENSION_VERSIONS[@]}"
-                        check_version_availability "$GNOME_VERSION"
-                        [ "$SELECTED_VERSION" ] ||
-                        select_version "[$EXTENSION_NAME] " "download"
-                        [ "$SELECTED_VERSION" ] &&
-                        download_version "${EXTENSIONS_QUERY[$n]}" "$SELECTED_VERSION" &&
-                        move_file
-                    else
-                        echo "[$n] Invalid extension number" >&2
-                    fi
-                done
-            done
-        elif [[ $COMMAND =~ ^p( )*[0-9]+$ ]]; then
-            PAGE="$( echo ${COMMAND:1} | sed 's/^0*//' )"
-            if [[ $PAGE -le $PAGES ]]; then
-                PAGE_NUM="${COMMAND:1}"
-                [[ $SEARCH_STRING ]] &&
-                echo "[$SEARCH_STRING] Obtaining page $PAGE_NUM" ||
-                echo "Obtaining page $PAGE_NUM"
-                download_info "/extension-query/?sort=$SORT&search=$SEARCH_STRING&page=$PAGE_NUM" \
-                              "No items to display" \
-                              "The page $PAGE_NUM" \
-                              "Failed to obtain page info" &&
-                load_content
-            else
-                echo "[$PAGE] Invalid page number" >&2
-            fi
-        elif [[ $COMMAND =~ ^s(n|r|d|p)$ ]]; then
-            case ${COMMAND:1:1} in
-                n) SORT="name" ;;
-                r) SORT="recent" ;;
-                d) SORT="downloads" ;;
-                p) SORT="popularity" ;;
-            esac
-            echo "Sorting by $SORT"
-            [ $TOTAL -gt 0 ] &&
-            { [[ $SEARCH_STRING ]] &&
-              echo "[$SEARCH_STRING] Obtaining page 1" ||
-              echo "Obtaining page 1"
-                  download_info "/extension-query/?sort=$SORT&search=$SEARCH_STRING&page=1" \
-                                "No items to display" \
-                                "The page $PAGE_NUM" \
-                                "Failed to obtain page info" &&
-                  load_content; }
-        elif [[ $COMMAND =~ ^(h|help)$ ]]; then
-            search_help
-        elif [[ $COMMAND =~ ^home$ ]]; then
-            unset SEARCH_STRING
-            echo "Loading homepage"
-            download_info "/extension-query/?sort=$SORT&page=1" \
-                          "No items to display" \
-                          "The page" \
-                          "Failed to obtain page info" &&
-            load_content
-        elif [[ $COMMAND =~ ^r$ ]]; then
-            [ $TOTAL -gt 0 ] &&
-            echo -e "$SEARCH_CONTENT"
-        elif [[ $COMMAND =~ ^(exit|quit|q)$ ]]; then
-            if [ ${#INSTALLED[@]} -gt 0 ]; then
-                echo -n "${#INSTALLED[@]} extension(s) installed. Restart shell? (y/N) "
-                read RESTART
-                [[ $RESTART =~ ^(y|Y) ]] && restart_shell
-            fi
-            exit
-        elif [[ $COMMAND =~ ^/ ]]; then
-            if [ "${COMMAND:1}" ]; then
-                SEARCH_STRING="${COMMAND:1}"
-                echo "[$SEARCH_STRING] Performing search"
-                download_info "/extension-query/?sort=$SORT&search=$SEARCH_STRING&page=1" \
-                              "No items to display" \
-                              "The search page for \"$SEARCH_STRING\"" \
-                              "Failed to obtain page info" &&
-                load_content
-            else
-                echo "No search string specified" >&2
-            fi
+        { EXTENSION_COMMENTS=$( extract_comments )
+        if [[ $( echo -e "$EXTENSION_COMMENTS" | wc -l ) -gt 10 ]] &&
+           [[ $( type less 2> "/dev/null" ) ]]; then
+          less -R <<< "$( echo -e "[$EXTENSION_NAME]\n\n$EXTENSION_COMMENTS" )"
         else
-            echo "Unknown command. Type h for help." >&2
+          echo -e "\n$EXTENSION_COMMENTS\n"
+        fi; }
+      else
+        echo "[$COMMAND] Invalid extension number" >&2
+      fi
+    elif [[ $COMMAND =~ ^d([0-9 ])+$ ]]; then
+      for n in ${COMMAND:1}; do
+        if [[ $n -lt $TOTAL ]]; then
+          extract_info "${EXTENSIONS_QUERY[$n]}"
+          if [[ $( echo -e "$EXTENSION_DESCRIPTION" | wc -l ) -gt 10 ]] &&
+             [[ $( type less 2> "/dev/null" ) ]]; then
+            less <<< "$( echo -e "[$EXTENSION_NAME]\n$EXTENSION_DESCRIPTION" )"
+          else
+            echo -e "[$EXTENSION_NAME]\n$EXTENSION_DESCRIPTION"
+          fi
+        else
+          echo "[$n] Invalid extension number" >&2
         fi
-    done
+      done
+    elif [[ $COMMAND =~ ^l([0-9 ])+$ ]]; then
+      for n in ${COMMAND:1}; do
+        if [[ $n -lt $TOTAL ]]; then
+          extract_info "${EXTENSIONS_QUERY[$n]}" &&
+          echo "[$EXTENSION_NAME] $EXTENSIONS_SITE$EXTENSION_LINK" ||
+          echo "[$n] Invalid extension number" >&2
+        else
+          echo "[$n] Invalid extension number" >&2
+        fi
+      done
+    elif [[ $COMMAND =~ ^s([0-9 ])+$ ]]; then
+      for n in $COMMAND; do
+        for n in ${COMMAND:1}; do
+          if extract_info "${EXTENSIONS_QUERY[$n]}" && [ $n -lt $TOTAL ]; then
+            [[ ${#EXTENSION_VERSIONS[@]} == 1 ]] &&
+            SELECTED_VERSION="${EXTENSION_VERSIONS[@]}"
+            check_version_availability "$GNOME_VERSION"
+            [ "$SELECTED_VERSION" ] ||
+            select_version "[$EXTENSION_NAME] " "download"
+            [ "$SELECTED_VERSION" ] &&
+            download_version "${EXTENSIONS_QUERY[$n]}" "$SELECTED_VERSION" &&
+            move_file
+          else
+            echo "[$n] Invalid extension number" >&2
+          fi
+        done
+      done
+    elif [[ $COMMAND =~ ^p( )*[0-9]+$ ]]; then
+      PAGE="$( echo ${COMMAND:1} | sed 's/^0*//' )"
+      if [[ $PAGE -le $PAGES ]]; then
+        PAGE_NUM="${COMMAND:1}"
+        [[ $SEARCH_STRING ]] &&
+        echo "[$SEARCH_STRING] Obtaining page $PAGE_NUM" ||
+        echo "Obtaining page $PAGE_NUM"
+        download_info "/extension-query/?sort=$SORT&search=$SEARCH_STRING&page=$PAGE_NUM" \
+                      "No items to display" \
+                      "The page $PAGE_NUM" \
+                      "Failed to obtain page info" &&
+        load_content
+      else
+        echo "[$PAGE] Invalid page number" >&2
+      fi
+    elif [[ $COMMAND =~ ^s(n|r|d|p)$ ]]; then
+      case ${COMMAND:1:1} in
+        n) SORT="name" ;;
+        r) SORT="recent" ;;
+        d) SORT="downloads" ;;
+        p) SORT="popularity" ;;
+      esac
+      echo "Sorting by $SORT"
+      [ $TOTAL -gt 0 ] &&
+      { [[ $SEARCH_STRING ]] &&
+        echo "[$SEARCH_STRING] Obtaining page 1" ||
+        echo "Obtaining page 1"
+        download_info "/extension-query/?sort=$SORT&search=$SEARCH_STRING&page=1" \
+                     "No items to display" \
+                     "The page $PAGE_NUM" \
+                     "Failed to obtain page info" &&
+        load_content; }
+    elif [[ $COMMAND =~ ^(h|help)$ ]]; then
+      search_help
+    elif [[ $COMMAND =~ ^home$ ]]; then
+      unset SEARCH_STRING
+      echo "Loading homepage"
+      download_info "/extension-query/?sort=$SORT&page=1" \
+                    "No items to display" \
+                    "The page" \
+                    "Failed to obtain page info" &&
+      load_content
+    elif [[ $COMMAND =~ ^r$ ]]; then
+      [ $TOTAL -gt 0 ] &&
+      echo -e "$SEARCH_CONTENT"
+    elif [[ $COMMAND =~ ^(exit|quit|q)$ ]]; then
+      if [ ${#INSTALLED[@]} -gt 0 ]; then
+        echo -n "${#INSTALLED[@]} extension(s) installed. Restart shell? (y/N) "
+        read RESTART
+        [[ $RESTART =~ ^(y|Y) ]] && restart_shell
+      fi
+      exit
+    elif [[ $COMMAND =~ ^/ ]]; then
+      if [ "${COMMAND:1}" ]; then
+        SEARCH_STRING="${COMMAND:1}"
+        echo "[$SEARCH_STRING] Performing search"
+        download_info "/extension-query/?sort=$SORT&search=$SEARCH_STRING&page=1" \
+                      "No items to display" \
+                      "The search page for \"$SEARCH_STRING\"" \
+                      "Failed to obtain page info" &&
+        load_content
+      else
+        echo "No search string specified" >&2
+      fi
+    else
+      echo "Unknown command. Type h for help." >&2
+    fi
+  done
 }
 
 main_program() {
-    echo "[$EXTENSION_ID] Obtaining extension info"
-    download_info "/extension-info/?pk=$EXTENSION_ID" \
-                  "Blank file" \
-                  "The extension $EXTENSION_ID" \
-                  "Failed to obtain extension info" &&
-    { extract_info "$EXTENSION_INFO"
-      check_version_availability "$1"
-      { if [ "$SELECTED_VERSION" ]; then
-            download_version "$EXTENSION_INFO" "$SELECTED_VERSION"
-        else
-            echo "[$EXTENSION_NAME] Extension not available for GNOME Shell $1"
-            get_other_version "$1"
-        fi } &&
-      { if [ "$INSTALL" == "install" ]; then
-            install_version
-        else
-            move_file
-        fi }
-    }
+  echo "[$EXTENSION_ID] Obtaining extension info"
+  download_info "/extension-info/?pk=$EXTENSION_ID" \
+                "Blank file" \
+                "The extension $EXTENSION_ID" \
+                "Failed to obtain extension info" &&
+  { extract_info "$EXTENSION_INFO"
+    check_version_availability "$1"
+    { if [ "$SELECTED_VERSION" ]; then
+        download_version "$EXTENSION_INFO" "$SELECTED_VERSION"
+      else
+        echo "[$EXTENSION_NAME] Extension not available for GNOME Shell $1"
+        get_other_version "$1"
+      fi } &&
+    { if [ "$INSTALL" == "install" ]; then
+        install_version
+      else
+        move_file
+    fi }
+  }
 }
 
 GNOME_VERSION="$( grep -oP "[0-9]+\.[0-9]+" <<< "$( gnome-shell --version )" )"
@@ -451,65 +451,65 @@ TOTAL=-1
 
 COUNTER="$#"
 while [ $COUNTER -gt 0 ]; do
-    if [[ $1 =~ ^-(h|-help)$ ]]; then
-        usage_guide
-        exit 0
-    elif [[ $1 =~ ^-(s|-search)$ ]]; then
-        unset RESTART SKIP_PROMPTS
-        SEARCH_STRING="$2"
-        PAGE_NUM="1"
-        [[ $SEARCH_STRING ]] &&
-        { echo "[$SEARCH_STRING] Performing search"
-          download_info "/extension-query/?sort=$SORT&search=${SEARCH_STRING// /%20}&page=1" \
-                        "No items to display" \
-                        "The search page for \"$SEARCH_STRING\"" \
-                        "Failed to obtain page info" &&
-          load_content; }
-        interactive_search
-    elif [ "$1" == "--yes" ]; then
-        SKIP_PROMPTS=1
-        shift
-        (( COUNTER -= 1 ))
-    elif [ "$1" == "--no-install" ]; then
-        INSTALL="download"
-        shift
-        (( COUNTER -= 1 ))
-    elif [ "$1" == "--restart-shell" ]; then
-        RESTART=1
-        shift
-        (( COUNTER -= 1 ))
-    elif [[ $1 =~ ^3\.[0-9\.]+$ ]]; then
-        GNOME_VERSION="$1"
-        shift
-        (( COUNTER -= 1 ))
-        if [ $COUNTER == 0 ] && [ $# == 0 ]; then
-            echo -e "$SCRIPT_NAME: missing arguments" >&2
-            exit 2
-        fi
-    elif [[ $1 =~ ^[0-9]+$ ]]; then
-        set "$@" "$1"
-        shift
-        (( COUNTER -= 1 ))
-    elif [[ $1 =~ ^- ]]; then
-        echo -e "$SCRIPT_NAME: unrecognized option '$1'\n" >&2
-        usage_guide >&2
-        exit 3
-    else
-        echo "$SCRIPT_NAME: '$1' is not a valid Extension ID" >&2
-        exit 4
+  if [[ $1 =~ ^-(h|-help)$ ]]; then
+    usage_guide
+    exit 0
+  elif [[ $1 =~ ^-(s|-search)$ ]]; then
+    unset RESTART SKIP_PROMPTS
+    SEARCH_STRING="$2"
+    PAGE_NUM="1"
+    [[ $SEARCH_STRING ]] &&
+    { echo "[$SEARCH_STRING] Performing search"
+      download_info "/extension-query/?sort=$SORT&search=${SEARCH_STRING// /%20}&page=1" \
+                    "No items to display" \
+                    "The search page for \"$SEARCH_STRING\"" \
+                    "Failed to obtain page info" &&
+      load_content; }
+    interactive_search
+  elif [ "$1" == "--yes" ]; then
+    SKIP_PROMPTS=1
+    shift
+    (( COUNTER -= 1 ))
+  elif [ "$1" == "--no-install" ]; then
+    INSTALL="download"
+    shift
+    (( COUNTER -= 1 ))
+  elif [ "$1" == "--restart-shell" ]; then
+    RESTART=1
+    shift
+    (( COUNTER -= 1 ))
+  elif [[ $1 =~ ^3\.[0-9\.]+$ ]]; then
+    GNOME_VERSION="$1"
+    shift
+    (( COUNTER -= 1 ))
+    if [ $COUNTER == 0 ] && [ $# == 0 ]; then
+      echo -e "$SCRIPT_NAME: missing arguments" >&2
+      exit 2
     fi
+  elif [[ $1 =~ ^[0-9]+$ ]]; then
+    set "$@" "$1"
+    shift
+    (( COUNTER -= 1 ))
+  elif [[ $1 =~ ^- ]]; then
+    echo -e "$SCRIPT_NAME: unrecognized option '$1'\n" >&2
+    usage_guide >&2
+    exit 3
+  else
+    echo "$SCRIPT_NAME: '$1' is not a valid Extension ID" >&2
+    exit 4
+  fi
 done
 
 if [ $# -gt 0 ]; then
-    for EXTENSION_ID in "$@"; do
-        main_program "$GNOME_VERSION"
-    done
-    if [ ${#INSTALLED[@]} -gt 0 ]; then
-        echo "${#INSTALLED[@]} extension(s) installed."
-        if [[ $RESTART == 1 ]]; then
-            restart_shell
-        fi
+  for EXTENSION_ID in "$@"; do
+    main_program "$GNOME_VERSION"
+  done
+  if [ ${#INSTALLED[@]} -gt 0 ]; then
+    echo "${#INSTALLED[@]} extension(s) installed."
+    if [[ $RESTART == 1 ]]; then
+      restart_shell
     fi
+  fi
 else
-    usage_guide
+  usage_guide
 fi
