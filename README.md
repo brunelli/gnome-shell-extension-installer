@@ -29,6 +29,8 @@ Usage examples:
 
 ### Manual installation
 
+Dependencies: `bash`, `curl`, `glib2`, `gnome-shell`, `less` (optional)
+
 ```
 wget -O gnome-shell-extension-installer "https://github.com/ianbrunelli/gnome-shell-extension-installer/raw/master/gnome-shell-extension-installer"
 chmod +x gnome-shell-extension-installer
