@@ -1,9 +1,13 @@
 GNOME Shell Extension Installer
 ===============================
 
+[![asciicast](https://asciinema.org/a/2kkzsbsd9k4x9xtn028q7w3dn.png)](https://asciinema.org/a/2kkzsbsd9k4x9xtn028q7w3dn)
+
 A bash script to install and search extensions from [extensions.gnome.org](https://extensions.gnome.org/).
 
-By default extensions are installed on `$HOME/.local/share/gnome-shell/extensions/`, except if the script is run with super user permission (then, it will be installed on `/usr/share/gnome-shell/extensions/`).
+By default extensions are installed in `$HOME/.local/share/gnome-shell/extensions/`,
+except if the script is run with super user permission
+(then, it will be installed in `/usr/share/gnome-shell/extensions/`).
 
 ## Help
 
@@ -29,14 +33,20 @@ Usage examples:
 
 ### Manual installation
 
-Dependencies: `bash`, `curl`, `glib2`, `gnome-shell`, `less` (optional)
+Dependencies:
+
+- `bash`
+- `curl`
+- `glib2`
+- `gnome-shell`
+- `less` (optional)
 
 ```
-wget -O gnome-shell-extension-installer "https://github.com/ianbrunelli/gnome-shell-extension-installer/raw/master/gnome-shell-extension-installer"
-chmod +x gnome-shell-extension-installer
-mv gnome-shell-extension-installer /usr/bin/
+$ wget -O gnome-shell-extension-installer "https://github.com/brunelli/gnome-shell-extension-installer/raw/master/gnome-shell-extension-installer"
+$ chmod +x gnome-shell-extension-installer
+$ mv gnome-shell-extension-installer /usr/bin/
 ```
 
 ### AUR (Arch Linux)
 
-[This is the AUR page](https://aur.archlinux.org/packages/gnome-shell-extension-installer). You know what do do.
+Available in the AUR as [gnome-shell-extension-installer](https://aur.archlinux.org/packages/gnome-shell-extension-installer).
