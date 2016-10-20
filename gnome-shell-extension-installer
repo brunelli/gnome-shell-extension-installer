@@ -48,14 +48,11 @@ check_version_validation() {
 enable_extension() {
   ENABLED_EXTENSIONS=$( gsettings get org.gnome.shell enabled-extensions |
                         cut -f 1 -d "[" --complement )
-  if [[ $RESTART == 0 ]]; then
-    RESTART_MESSAGE=" (you may have to restart GNOME Shell)"
-  fi
   [ "$( grep -v "$2" <<< "$ENABLED_EXTENSIONS" )" ] &&
   { echo "[$1] Enabling extension"
     [[ ${ENABLED_EXTENSIONS%?} ]] && SEPARATOR=", "
     gsettings set org.gnome.shell enabled-extensions "[${ENABLED_EXTENSIONS%?}$SEPARATOR'$2']" &&
-    echo "[$1] Extension enabled$RESTART_MESSAGE"; } ||
+    echo "[$1] Extension enabled"; } ||
   echo "[$1] The extension is already enabled"
 }
 
@@ -388,12 +385,7 @@ interactive_search() {
       [ $TOTAL -gt 0 ] &&
       echo -e "$SEARCH_CONTENT"
     elif [[ $COMMAND =~ ^(exit|quit|q)$ ]]; then
-      if [ ${#INSTALLED[@]} -gt 0 ]; then
-        echo -n "${#INSTALLED[@]} extension(s) installed. Restart shell? (y/N) "
-        read RESTART
-        [[ $RESTART =~ ^(y|Y) ]] && restart_shell
-      fi
-      exit
+      return
     elif [[ $COMMAND =~ ^/ ]]; then
       if [ "${COMMAND:1}" ]; then
         SEARCH_STRING="${COMMAND:1}"
@@ -442,7 +434,7 @@ SORT="popularity"
 [[ $EUID -eq 0 ]] &&
 EXTENSIONS_PATH="/usr/share/gnome-shell/extensions" ||
 EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
-
+unset SEARCH_STRING
 SCRIPT_NAME=$( basename "$0" )
 INSTALL="install"
 RESTART=0
@@ -455,17 +447,12 @@ while [ $COUNTER -gt 0 ]; do
     usage_guide
     exit 0
   elif [[ $1 =~ ^-(s|-search)$ ]]; then
-    unset RESTART SKIP_PROMPTS
-    SEARCH_STRING="$2"
-    PAGE_NUM="1"
     [[ $SEARCH_STRING ]] &&
-    { echo "[$SEARCH_STRING] Performing search"
-      download_info "/extension-query/?sort=$SORT&search=${SEARCH_STRING// /%20}&page=1" \
-                    "No items to display" \
-                    "The search page for \"$SEARCH_STRING\"" \
-                    "Failed to obtain page info" &&
-      load_content; }
-    interactive_search
+    { echo -e "$SCRIPT_NAME: excessive arguments" >&2
+      exit 2; }
+    SEARCH_STRING="$2"
+    shift 2
+    (( COUNTER -= 2 ))
   elif [ "$1" == "--yes" ]; then
     SKIP_PROMPTS=1
     shift
@@ -475,14 +462,19 @@ while [ $COUNTER -gt 0 ]; do
     shift
     (( COUNTER -= 1 ))
   elif [ "$1" == "--restart-shell" ]; then
-    RESTART=1
+    if [[ "$XDG_SESSION_TYPE" == "wayland" ]]; then
+      echo -e "\e[0;33mWARNING\e[0m: Restart is not available on Wayland" >&2
+      RESTART=-1
+    else
+      RESTART=1
+    fi
     shift
     (( COUNTER -= 1 ))
   elif [[ $1 =~ ^3\.[0-9\.]+$ ]]; then
     GNOME_VERSION="$1"
     shift
     (( COUNTER -= 1 ))
-    if [ $COUNTER == 0 ] && [ $# == 0 ]; then
+    if [ $COUNTER == 0 ] && [ $# == 0 ] && [[ ! $SEARCH_STRING ]]; then
       echo -e "$SCRIPT_NAME: missing arguments" >&2
       exit 2
     fi
@@ -500,16 +492,40 @@ while [ $COUNTER -gt 0 ]; do
   fi
 done
 
-if [ $# -gt 0 ]; then
+
+if [[ $SEARCH_STRING ]]; then
+  [[ $# -gt 0 ]] && { echo -e "$SCRIPT_NAME: excessive arguments" >&2; exit 2; }
+  unset SKIP_PROMPTS
+  PAGE_NUM="1"
+  [[ $SEARCH_STRING ]] &&
+  { echo "[$SEARCH_STRING] Performing search"
+    download_info "/extension-query/?sort=$SORT&search=${SEARCH_STRING// /%20}&page=1" \
+                  "No items to display" \
+                  "The search page for \"$SEARCH_STRING\"" \
+                  "Failed to obtain page info" &&
+    load_content; }
+  interactive_search
+elif [ $# -gt 0 ]; then
   for EXTENSION_ID in "$@"; do
     main_program "$GNOME_VERSION"
   done
   if [ ${#INSTALLED[@]} -gt 0 ]; then
     echo "${#INSTALLED[@]} extension(s) installed."
-    if [[ $RESTART == 1 ]]; then
-      restart_shell
-    fi
+    [[ $RESTART == 1 ]] && restart_shell
   fi
 else
   usage_guide
+fi
+
+if [ ${#INSTALLED[@]} -gt 0 ]; then
+  echo -n "${#INSTALLED[@]} extension(s) installed. "
+  if [[ $RESTART == 1 ]]; then
+    restart_shell
+  elif [[ $SEARCH_STRING ]] && [[ "$XDG_SESSION_TYPE" != "wayland" ]]; then
+    echo -n "Restart shell? (y/N) "
+    read RESTART
+    [[ $RESTART =~ ^(y|Y) ]] && restart_shell
+  else
+    echo "You may have to restart GNOME Shell."
+  fi
 fi
