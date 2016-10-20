@@ -33,9 +33,9 @@ EOF
 check_version_validation() {
   DISABLE_VERSION_VALIDATION=$( gsettings get org.gnome.shell disable-extension-version-validation )
   [ "$DISABLE_VERSION_VALIDATION" == "true" ] ||
-  { echo -en "\nExtension version validation is enabled on GNOME Shell." \
-             "\nTo use extensions older than the current version of Shell, you have to disable it." \
-             "\nDo it now (y/N)? "
+  { echo -en "\nExtension version validation is enabled." \
+             "\nTo use extensions older than the running version of Shell, you have to disable it." \
+             "\nWould you like to disable it now (y/N)? "
     [ $SKIP_PROMPTS ] &&
     { echo "yes"
       DO_IT="yes"; } ||
@@ -64,6 +64,7 @@ extract_extension() {
 }
 
 install_version() {
+  [ "$INSTALL" == "download" ] && { move_file; return; }
   extract_extension "$EXTENSION_NAME" "$EXTENSION_UUID" "$EXTENSION_ID" &&
   enable_extension "$EXTENSION_NAME" "$EXTENSION_UUID" &&
   INSTALLED+=("$EXTENSION_ID")
@@ -100,7 +101,7 @@ check_version_availability() {
 select_version() {
   if [[ "${EXTENSION_VERSIONS[0]}" ]]; then
     while [[ ! $SELECTED_VERSION ]]; do
-      echo -n $1"Type a version to $2: "
+      echo -n $1"Type a version to $INSTALL: "
       if [[ ! $SKIP_PROMPTS ]]; then
         read INPUT
         check_version_availability "$INPUT"
@@ -123,7 +124,7 @@ get_other_version() {
     for VERSION in ${EXTENSION_VERSIONS[@]}; do
       echo "- $VERSION"
     done
-    select_version "" "$INSTALL"; }
+    select_version; }
   echo
   [ "$SELECTED_VERSION" ] &&
   check_version_validation &&
@@ -214,7 +215,7 @@ download_comments() {
 
 search_help() {
   cat << EOF
-<number(s)>	Install extension(s)
+<number(s)>	${INSTALL^} extension(s)
 c<number>	Display comments
 d<number(s)>	Get description(s)
 l<number(s)>	Get link(s) on extensions.gnome.org
@@ -272,7 +273,7 @@ interactive_search() {
           SELECTED_VERSION="${EXTENSION_VERSIONS[@]}"
           check_version_availability "$GNOME_VERSION"
           [ "$SELECTED_VERSION" ] ||
-          select_version "[$EXTENSION_NAME] " "install"
+          select_version "[$EXTENSION_NAME] "
           [ "$SELECTED_VERSION" ] &&
           download_version "${EXTENSIONS_QUERY[$n]}" "$SELECTED_VERSION" &&
           install_version
@@ -330,7 +331,7 @@ interactive_search() {
             SELECTED_VERSION="${EXTENSION_VERSIONS[@]}"
             check_version_availability "$GNOME_VERSION"
             [ "$SELECTED_VERSION" ] ||
-            select_version "[$EXTENSION_NAME] " "download"
+            select_version "[$EXTENSION_NAME] "
             [ "$SELECTED_VERSION" ] &&
             download_version "${EXTENSIONS_QUERY[$n]}" "$SELECTED_VERSION" &&
             move_file
@@ -417,13 +418,8 @@ main_program() {
       else
         echo "[$EXTENSION_NAME] Extension not available for GNOME Shell $1"
         get_other_version "$1"
-      fi } &&
-    { if [ "$INSTALL" == "install" ]; then
-        install_version
-      else
-        move_file
-    fi }
-  }
+      fi; } &&
+    install_version; }
 }
 
 GNOME_VERSION="$( grep -oP "[0-9]+\.[0-9]+" <<< "$( gnome-shell --version )" )"
@@ -434,12 +430,12 @@ SORT="popularity"
 [[ $EUID -eq 0 ]] &&
 EXTENSIONS_PATH="/usr/share/gnome-shell/extensions" ||
 EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
-unset SEARCH_STRING
 SCRIPT_NAME=$( basename "$0" )
 INSTALL="install"
 RESTART=0
 PAGES=-1
 TOTAL=-1
+unset INSTALL_ARRAY INSTALLED SEARCH_STRING
 
 COUNTER="$#"
 while [ $COUNTER -gt 0 ]; do
@@ -450,9 +446,15 @@ while [ $COUNTER -gt 0 ]; do
     [[ $SEARCH_STRING ]] &&
     { echo -e "$SCRIPT_NAME: excessive arguments" >&2
       exit 2; }
-    SEARCH_STRING="$2"
-    shift 2
-    (( COUNTER -= 2 ))
+    if [[ ! $2 =~ ^- ]] && [[ ! $2 =~ ^[0-9\.]+$ ]]; then
+      SEARCH_STRING="$2"
+      shift 1
+      (( COUNTER -= 1 ))
+    else
+      SEARCH_STRING=""
+    fi
+    shift 1
+    (( COUNTER -= 1 ))
   elif [ "$1" == "--yes" ]; then
     SKIP_PROMPTS=1
     shift
@@ -474,12 +476,8 @@ while [ $COUNTER -gt 0 ]; do
     GNOME_VERSION="$1"
     shift
     (( COUNTER -= 1 ))
-    if [ $COUNTER == 0 ] && [ $# == 0 ] && [[ ! $SEARCH_STRING ]]; then
-      echo -e "$SCRIPT_NAME: missing arguments" >&2
-      exit 2
-    fi
   elif [[ $1 =~ ^[0-9]+$ ]]; then
-    set "$@" "$1"
+    INSTALL_ARRAY+=( $1 )
     shift
     (( COUNTER -= 1 ))
   elif [[ $1 =~ ^- ]]; then
@@ -492,9 +490,10 @@ while [ $COUNTER -gt 0 ]; do
   fi
 done
 
-
-if [[ $SEARCH_STRING ]]; then
-  [[ $# -gt 0 ]] && { echo -e "$SCRIPT_NAME: excessive arguments" >&2; exit 2; }
+if [[ -n ${SEARCH_STRING+ } ]]; then
+  [[ ${#INSTALL_ARRAY[@]} -gt 0 ]] &&
+  { echo -e "$SCRIPT_NAME: excessive arguments" >&2
+    exit 2; }
   unset SKIP_PROMPTS
   PAGE_NUM="1"
   [[ $SEARCH_STRING ]] &&
@@ -505,8 +504,8 @@ if [[ $SEARCH_STRING ]]; then
                   "Failed to obtain page info" &&
     load_content; }
   interactive_search
-elif [ $# -gt 0 ]; then
-  for EXTENSION in "$@"; do
+elif [ ${#INSTALL_ARRAY[@]} -gt 0 ]; then
+  for EXTENSION in ${INSTALL_ARRAY[@]}; do
     main_program "$GNOME_VERSION" "$EXTENSION"
   done
 else
