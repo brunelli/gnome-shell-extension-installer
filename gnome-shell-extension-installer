@@ -405,10 +405,10 @@ interactive_search() {
 }
 
 main_program() {
-  echo "[$EXTENSION_ID] Obtaining extension info"
-  download_info "/extension-info/?pk=$EXTENSION_ID" \
+  echo "[$2] Obtaining extension info"
+  download_info "/extension-info/?pk=$2" \
                 "Blank file" \
-                "The extension $EXTENSION_ID" \
+                "The extension $2" \
                 "Failed to obtain extension info" &&
   { extract_info "$EXTENSION_INFO"
     check_version_availability "$1"
@@ -506,13 +506,9 @@ if [[ $SEARCH_STRING ]]; then
     load_content; }
   interactive_search
 elif [ $# -gt 0 ]; then
-  for EXTENSION_ID in "$@"; do
-    main_program "$GNOME_VERSION"
+  for EXTENSION in "$@"; do
+    main_program "$GNOME_VERSION" "$EXTENSION"
   done
-  if [ ${#INSTALLED[@]} -gt 0 ]; then
-    echo "${#INSTALLED[@]} extension(s) installed."
-    [[ $RESTART == 1 ]] && restart_shell
-  fi
 else
   usage_guide
 fi
