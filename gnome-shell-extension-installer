@@ -219,7 +219,6 @@ search_help() {
 c<number>	Display comments
 d<number(s)>	Get description(s)
 l<number(s)>	Get link(s) on extensions.gnome.org
-s<number(s)>	Save the extension(s) on the current directory
 p<number>	Go to page
 r		Print the search content again
 sn		Sort by name
@@ -297,7 +296,7 @@ interactive_search() {
           echo -e "\n$EXTENSION_COMMENTS\n"
         fi; }
       else
-        echo "[$COMMAND] Invalid extension number" >&2
+        echo "[${COMMAND:1}] Invalid extension number" >&2
       fi
     elif [[ $COMMAND =~ ^d([0-9 ])+$ ]]; then
       for n in ${COMMAND:1}; do
@@ -322,23 +321,6 @@ interactive_search() {
         else
           echo "[$n] Invalid extension number" >&2
         fi
-      done
-    elif [[ $COMMAND =~ ^s([0-9 ])+$ ]]; then
-      for n in $COMMAND; do
-        for n in ${COMMAND:1}; do
-          if extract_info "${EXTENSIONS_QUERY[$n]}" && [ $n -lt $TOTAL ]; then
-            [[ ${#EXTENSION_VERSIONS[@]} == 1 ]] &&
-            SELECTED_VERSION="${EXTENSION_VERSIONS[@]}"
-            check_version_availability "$GNOME_VERSION"
-            [ "$SELECTED_VERSION" ] ||
-            select_version "[$EXTENSION_NAME] "
-            [ "$SELECTED_VERSION" ] &&
-            download_version "${EXTENSIONS_QUERY[$n]}" "$SELECTED_VERSION" &&
-            move_file
-          else
-            echo "[$n] Invalid extension number" >&2
-          fi
-        done
       done
     elif [[ $COMMAND =~ ^p( )*[0-9]+$ ]]; then
       PAGE="$( echo ${COMMAND:1} | sed 's/^0*//' )"
