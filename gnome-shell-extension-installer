@@ -12,21 +12,20 @@
 
 usage_guide() {
   cat << EOF
-Usage: $SCRIPT_NAME EXTENSION_ID [ EXTENSION_ID... ] [ GNOME_VERSION ] [ OPTIONS ]
+Usage: $SCRIPT_NAME EXTENSION_ID [EXTENSION_ID...] [GNOME_VERSION] [OPTIONS]
 
 Options:
-  -s or --search [ STRING ]	Interactive search.
+  -s or --search [STRING]	Interactive search.
   --yes 			Skip all prompts.
   --no-install 			Saves the extension(s) in the current directory.
-  --restart-shell 		Restart GNOME Shell after the extensions are installed.
+  --restart-shell 		Restart Shell after installing all extensions.
   -h or --help 			Print this message.
 
 Usage examples:
-  # Install "Small Panel Icon" for GNOME Shell 3.12 answering yes to all questions:
-  $SCRIPT_NAME 861 3.12 --yes
-
-  # Search for extensions matching "User Themes":
-  $SCRIPT_NAME -s "User Themes"
+  $SCRIPT_NAME 307			# Install "Dash to Dock"
+  $SCRIPT_NAME 307 3.8		# Install for Shell 3.8
+  $SCRIPT_NAME 53 --no-install	# Download "Pomodoro"
+  $SCRIPT_NAME -s "User Themes"	# Search "User Themes"
 EOF
 }
 
