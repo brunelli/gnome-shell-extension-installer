@@ -498,8 +498,8 @@ if [ ${#INSTALLED[@]} -gt 0 ]; then
   echo -n "${#INSTALLED[@]} extension(s) installed. "
   if [[ $RESTART == 1 ]]; then
     restart_shell
-  elif [[ $SEARCH_STRING ]] && [[ "$XDG_SESSION_TYPE" != "wayland" ]]; then
-    echo -n "Restart shell? (y/N) "
+  elif [[ -n ${SEARCH_STRING+ } ]] && [[ "$XDG_SESSION_TYPE" != "wayland" ]]; then
+    echo -n "Restart GNOME Shell? (y/N) "
     read RESTART
     [[ $RESTART =~ ^(y|Y) ]] && restart_shell
   else
