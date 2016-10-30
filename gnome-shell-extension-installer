@@ -375,6 +375,8 @@ interactive_search() {
       else
         echo "No search string specified" >&2
       fi
+    elif [[ ! $COMMAND ]]; then
+      continue
     else
       echo "Unknown command. Type h for help." >&2
     fi
@@ -413,32 +415,27 @@ PAGES=-1
 TOTAL=-1
 unset INSTALL_ARRAY INSTALLED SEARCH_STRING
 
-COUNTER="$#"
-while [ $COUNTER -gt 0 ]; do
+while [ $# -gt 0 ]; do
   if [[ $1 =~ ^-(h|-help)$ ]]; then
     usage_guide
     exit 0
   elif [[ $1 =~ ^-(s|-search)$ ]]; then
-    [[ $SEARCH_STRING ]] &&
+    [[ -n ${SEARCH_STRING+ } ]] &&
     { echo -e "$SCRIPT_NAME: excessive arguments" >&2
       exit 2; }
     if [[ ! $2 =~ ^- ]] && [[ ! $2 =~ ^[0-9\.]+$ ]]; then
       SEARCH_STRING="$2"
       shift 1
-      (( COUNTER -= 1 ))
     else
       SEARCH_STRING=""
     fi
     shift 1
-    (( COUNTER -= 1 ))
   elif [ "$1" == "--yes" ]; then
     SKIP_PROMPTS=1
     shift
-    (( COUNTER -= 1 ))
   elif [ "$1" == "--no-install" ]; then
     INSTALL="download"
     shift
-    (( COUNTER -= 1 ))
   elif [ "$1" == "--restart-shell" ]; then
     if [[ "$XDG_SESSION_TYPE" == "wayland" ]]; then
       echo -e "\e[0;33mWARNING\e[0m: Restart is not available on Wayland" >&2
@@ -447,15 +444,12 @@ while [ $COUNTER -gt 0 ]; do
       RESTART=1
     fi
     shift
-    (( COUNTER -= 1 ))
   elif [[ $1 =~ ^3\.[0-9\.]+$ ]]; then
     GNOME_VERSION="$1"
     shift
-    (( COUNTER -= 1 ))
   elif [[ $1 =~ ^[0-9]+$ ]]; then
     INSTALL_ARRAY+=( $1 )
     shift
-    (( COUNTER -= 1 ))
   elif [[ $1 =~ ^- ]]; then
     echo -e "$SCRIPT_NAME: unrecognized option '$1'\n" >&2
     usage_guide >&2
