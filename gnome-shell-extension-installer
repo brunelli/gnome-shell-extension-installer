@@ -46,14 +46,8 @@ check_version_validation() {
 }
 
 enable_extension() {
-  ENABLED_EXTENSIONS=$( gsettings get org.gnome.shell enabled-extensions |
-                        cut -f 1 -d "[" --complement )
-  [ "$( grep -v "$2" <<< "$ENABLED_EXTENSIONS" )" ] &&
-  { echo "[$1] Enabling extension"
-    [[ ${ENABLED_EXTENSIONS%?} ]] && SEPARATOR=", "
-    gsettings set org.gnome.shell enabled-extensions "[${ENABLED_EXTENSIONS%?}$SEPARATOR'$2']" &&
-    echo "[$1] Extension enabled"; } ||
-  echo "[$1] The extension is already enabled"
+  EXTL_OUTPUT=$( gnome-shell-extension-tool --enable-extension="$2" 2>&1 )
+  sed -n "s/^'.*' is\( now\)\?\(.*\)\.$/[$1] Extension\2/p" <<< "$EXTL_OUTPUT"
 }
 
 extract_extension() {
