@@ -1,14 +1,13 @@
 #!/bin/bash
 
- ########################################################################
- #                                                                      #
- #                    GNOME Shell Extension Installer                   #
- #                                                                      #
- #   Version: 1.4.3 (14/10/2016)                                        #
- #   Author: Ian Brunelli <ian@brunelli.me>                             #
- #   URL: https://github.com/brunelli/gnome-shell-extension-installer   #
- #                                                                      #
- ########################################################################
+   #################################################################
+   #                                                               #
+   #              GNOME Shell Extension Installer 1.5              #
+   #                Copyright (C) 2016 Ian Brunelli                #
+   #                                                               #
+   #  https://github.com/brunelli/gnome-shell-extension-installer  #
+   #                                                               #
+   #################################################################
 
 usage_guide() {
   cat << EOF
