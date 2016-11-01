@@ -11,17 +11,17 @@ A bash script to install and search extensions from [extensions.gnome.org](https
 Usage: gnome-shell-extension-installer EXTENSION_ID [EXTENSION_ID...] [GNOME_VERSION] [OPTIONS]
 
 Options:
-  -s or --search [STRING]	Interactive search.
-  --yes 			Skip all prompts.
-  --no-install 			Saves the extension(s) in the current directory.
-  --restart-shell 		Restart GNOME Shell after the extensions are installed.
-  -h or --help 			Print this message.
+  -s or --search [STRING] Interactive search.
+  --yes                   Skip all prompts.
+  --no-install            Saves the extension(s) in the current directory.
+  --restart-shell         Restart GNOME Shell after the extensions are installed.
+  -h or --help            Print this message.
 
 Usage examples:
-  gnome-shell-extension-installer 307			# Install "Dash to Dock"
-  gnome-shell-extension-installer 307 3.8		# Install for Shell 3.8
-  gnome-shell-extension-installer 53 --no-install	# Download "Pomodoro"
-  gnome-shell-extension-installer -s "User Themes"	# Search "User Themes"
+  gnome-shell-extension-installer 307               # Install "Dash to Dock"
+  gnome-shell-extension-installer 307 3.8           # Install for Shell 3.8
+  gnome-shell-extension-installer 53 --no-install   # Download "Pomodoro"
+  gnome-shell-extension-installer -s "User Themes"  # Search "User Themes"
 ```
 
 By default extensions are installed in `$HOME/.local/share/gnome-shell/extensions/`,
