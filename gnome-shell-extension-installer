@@ -398,16 +398,21 @@ main_program() {
     install_version; }
 }
 
-GNOME_VERSION="$( grep -oP "[0-9]+\.[0-9]+" <<< "$( gnome-shell --version )" )"
+GNOME_VERSION=$( gnome-shell --version 2> /dev/null |
+                 sed -n "s/^.* \([0-9]\+\.[0-9]\+\).*$/\1/p" )
 DOWNLOAD_PARAMETERS="-Lfs"
 EXTENSIONS_SITE="https://extensions.gnome.org"
 SORT="popularity"
 
 [[ $EUID -eq 0 ]] &&
 EXTENSIONS_PATH="/usr/share/gnome-shell/extensions" ||
-EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
+{ EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
+  mkdir -p "$EXTENSIONS_PATH"; }
+[[ $( type gnome-shell 2> "/dev/null" ) ]] &&
+INSTALL="install" ||
+{ INSTALL="download"
+  echo -e "\e[0;33mWARNING\e[0m: Install is not available" >&2; }
 SCRIPT_NAME=$( basename "$0" )
-INSTALL="install"
 RESTART=0
 PAGES=-1
 TOTAL=-1
@@ -457,6 +462,10 @@ while [ $# -gt 0 ]; do
     exit 4
   fi
 done
+
+[[ $GNOME_VERSION ]] ||
+{ echo -e "\e[0;31mERROR\e[0m: You need to pass a GNOME version as argument" >&2
+  exit 5; }
 
 if [[ -n ${SEARCH_STRING+ } ]]; then
   [[ ${#INSTALL_ARRAY[@]} -gt 0 ]] &&
