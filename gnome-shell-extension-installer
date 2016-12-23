@@ -126,7 +126,7 @@ get_other_version() {
 extract_info() {
   EXTENSION_NAME=$( sed 's/^.*\"name\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
   EXTENSION_DESCRIPTION=$( sed 's/^.*\"description\": \"//g' <<< "$1" |
-                           sed 's/\", \"creator\".*$//g' |
+                           sed 's/\", \"[a-z]\+\".*$//g' |
                            sed 's/\\\"/\"/g' )
   EXTENSION_CREATOR=$( sed 's/^.*\"creator\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
   EXTENSION_UUID=$( sed 's/^.*\"uuid\"[: \"]*\([^\"]*\).*$/\1/' <<< "$1" )
