@@ -246,6 +246,7 @@ load_content() {
 }
 
 restart_shell() {
+  [[ $( pgrep gnome-shell ) ]] || return
   echo "Restarting GNOME Shell..."
   dbus-send --session --type=method_call \
             --dest=org.gnome.Shell /org/gnome/Shell \
