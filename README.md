@@ -36,8 +36,8 @@ Dependencies:
 
 - `bash`
 - `curl`
+- `dbus`
 - `glib2`
-- `gnome-shell`
 - `less` (optional)
 
 ```
