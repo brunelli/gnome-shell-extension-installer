@@ -51,8 +51,8 @@ enable_extension() {
 extract_extension() {
   mkdir -p "$EXTENSIONS_PATH/$2"
   echo "[$1] Extracting extension"
-  unzip -qq -o "/tmp/shell-$SELECTED_VERSION-extension-install.$3.zip" -d "$EXTENSIONS_PATH/$2"
-  rm -f "/tmp/shell-$SELECTED_VERSION-extension-install.$3.zip"
+  unzip -qq -o "$TMP_DIR/shell-$SELECTED_VERSION-extension-install.$3.zip" -d "$EXTENSIONS_PATH/$2"
+  rm -f "$TMP_DIR/shell-$SELECTED_VERSION-extension-install.$3.zip"
 }
 
 install_version() {
@@ -63,16 +63,16 @@ install_version() {
 }
 
 move_file() {
-  mv "/tmp/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip" "$EXTENSION_UUID.shell-extension.zip" 2> /dev/null &&
+  mv "$TMP_DIR/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip" "$EXTENSION_UUID.shell-extension.zip" 2> /dev/null &&
   echo "[$EXTENSION_NAME] Extension saved as $EXTENSION_UUID.shell-extension.zip" ||
   echo -e "\e[0;31mERROR\e[0m: Failed to save file" >&2
-  rm -f "/tmp/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip"
+  rm -f "$TMP_DIR/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip"
 }
 
 download_version() {
   DOWNLOAD_TARGET=$( sed "s/^.*$2\": {\"pk[\": ]*\([^\"]*\),.*$/\1/" <<< "$1" )
   echo "[$EXTENSION_NAME] Downloading extension"
-  if curl $DOWNLOAD_PARAMETERS -o "/tmp/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip" \
+  if curl $DOWNLOAD_PARAMETERS -o "$TMP_DIR/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip" \
           "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET"
   then
     return 0
@@ -413,6 +413,7 @@ EXTENSIONS_PATH="/usr/share/gnome-shell/extensions" ||
 INSTALL="install" ||
 { INSTALL="download"
   echo -e "\e[0;33mWARNING\e[0m: Install is not available" >&2; }
+[[ -w "/tmp" ]] && TMP_DIR="/tmp" || TMP_DIR="."
 SCRIPT_NAME=$( basename "$0" )
 RESTART=0
 PAGES=-1
