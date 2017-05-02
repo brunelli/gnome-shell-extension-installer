@@ -17,6 +17,7 @@ Options:
   -s or --search [STRING]	Interactive search.
   --yes 			Skip all prompts.
   --no-install 			Saves the extension(s) in the current directory.
+  --update 			Check for new versions.
   --restart-shell 		Restart Shell after installing all extensions.
   -h or --help 			Print this message.
 
@@ -70,7 +71,17 @@ move_file() {
 }
 
 download_version() {
-  DOWNLOAD_TARGET=$( sed "s/^.*$2\": {\"pk[\": ]*\([^\"]*\),.*$/\1/" <<< "$1" )
+  DOWNLOAD_TARGET=$( sed "s/^.*$2\": {\"pk[\": ]\+\([0-9]\+\),.*$/\1/" <<< "$1" )
+  METADATA_FILE="$EXTENSIONS_PATH/$EXTENSION_UUID/metadata.json"
+  [ -f "$METADATA_FILE" ] &&
+  { VERSION_TARGET=$( sed "s/^.*$2\": {\"pk[\": ]\+[0-9]\+[\", ]\+version[\": ]\+\([0-9]\+\)}.*$/\1/" <<< "$1" )
+    VERSION_INSTALLED=$( sed -n "s/^[[:space:]]*\"version[\": ]\+\([0-9]\+\).*$/\1/p" "$METADATA_FILE" )
+    [ $VERSION_TARGET -le $VERSION_INSTALLED ] &&
+    { if [ $UPDATE ]; then
+        echo "[$EXTENSION_NAME] The extension is up-to-date"
+        return 2
+      fi; } ||
+    echo "[$EXTENSION_NAME] New version available"; }
   echo "[$EXTENSION_NAME] Downloading extension"
   if curl $DOWNLOAD_PARAMETERS -o "$TMP_DIR/shell-$SELECTED_VERSION-extension-install.$EXTENSION_ID.zip" \
           "$EXTENSIONS_SITE/download-extension/$EXTENSION_UUID.shell-extension.zip?version_tag=$DOWNLOAD_TARGET"
@@ -382,13 +393,16 @@ interactive_search() {
   done
 }
 
-main_program() {
-  echo "[$2] Obtaining extension info"
-  download_info "/extension-info/?pk=$2" \
+get_info_from_id() {
+  echo "[$1] Obtaining extension info"
+  download_info "/extension-info/?pk=$1" \
                 "Blank file" \
-                "The extension $2" \
+                "The extension $1" \
                 "Failed to obtain extension info" &&
-  { extract_info "$EXTENSION_INFO"
+  extract_info "$EXTENSION_INFO"
+}
+
+main_program() {
     check_version_availability "$1"
     { if [ "$SELECTED_VERSION" ]; then
         download_version "$EXTENSION_INFO" "$SELECTED_VERSION"
@@ -396,7 +410,7 @@ main_program() {
         echo "[$EXTENSION_NAME] Extension not available for GNOME Shell $1"
         get_other_version "$1"
       fi; } &&
-    install_version; }
+    install_version
 }
 
 GNOME_VERSION=$( gnome-shell --version 2> /dev/null |
@@ -418,7 +432,7 @@ SCRIPT_NAME=$( basename "$0" )
 RESTART=0
 PAGES=-1
 TOTAL=-1
-unset INSTALL_ARRAY INSTALLED SEARCH_STRING
+unset INSTALL_ARRAY INSTALLED SEARCH_STRING SKIP_PROMPTS UPDATE
 
 while [ $# -gt 0 ]; do
   if [[ $1 =~ ^-(h|-help)$ ]]; then
@@ -440,6 +454,9 @@ while [ $# -gt 0 ]; do
     shift
   elif [ "$1" == "--no-install" ]; then
     INSTALL="download"
+    shift
+  elif [ "$1" == "--update" ]; then
+    UPDATE=1
     shift
   elif [ "$1" == "--restart-shell" ]; then
     if [[ "$XDG_SESSION_TYPE" == "wayland" ]]; then
@@ -485,7 +502,32 @@ if [[ -n ${SEARCH_STRING+ } ]]; then
   interactive_search
 elif [ ${#INSTALL_ARRAY[@]} -gt 0 ]; then
   for EXTENSION in ${INSTALL_ARRAY[@]}; do
-    main_program "$GNOME_VERSION" "$EXTENSION"
+    get_info_from_id "$EXTENSION" &&
+    main_program "$GNOME_VERSION"
+  done
+elif [ $UPDATE ]; then
+  UPDATE_LIST=$( find -L "$EXTENSIONS_PATH" -maxdepth 2 -name "metadata.json" -exec \
+                      sed -n "s/^[[:space:]]*\"uuid[\": ]\+\(.*\)\".*$/\1/p" {} \; )
+  for EXTENSION in ${UPDATE_LIST[@]}; do
+    IS_GIT_DIR=$( type git > /dev/null 2> /dev/null &&
+                  git -C "$EXTENSIONS_PATH/$EXTENSION/" rev-parse --is-inside-work-tree 2> /dev/null )
+    if [ $IS_GIT_DIR ]; then
+      echo "[$EXTENSION] Updating from git"
+      git -C "$EXTENSIONS_PATH/$EXTENSION/" pull
+    else
+      echo "[$EXTENSION] Searching extensions.gnome.org"
+      download_info "/extension-query/?search=${EXTENSION}" \
+                    "Extension not found" \
+                    "The search page for \"$SEARCH_STRING\"" \
+                    "Failed to obtain extension info" &&
+      { IFS=$'\n' read -d '' -r -a EXTENSIONS_QUERY <<< "$( echo $EXTENSION_INFO | cut -f1 --complement -d"[" | sed 's/{[\"]*shell_version_map[\"]*:/\n/g' )"
+        FOUND=false
+        for SEARCH_RESULT in "${EXTENSIONS_QUERY[@]}"; do
+          extract_info "$SEARCH_RESULT"
+          [[ "$EXTENSION" == "$EXTENSION_UUID" ]] && { FOUND=true; break; }
+        done
+        [ $FOUND ] && main_program "$GNOME_VERSION"; }
+    fi
   done
 else
   usage_guide
