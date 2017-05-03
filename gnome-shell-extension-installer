@@ -108,6 +108,15 @@ check_version_availability() {
     [ "$1" == "$VERSION" ] &&
     SELECTED_VERSION="$1"
   done
+  [[ ! $SELECTED_VERSION ]] &&
+  { TARGET=$( sed -n "s/^3\.\([0-9]\+\).*$/\1/p" <<< "$1" )
+    LATEST=$( sed -n "s/^3\.\([0-9]\+\).*$/\1/p" <<< "${EXTENSION_VERSIONS[0]}" )
+    [[ ${1%%\.*} == ${EXTENSION_VERSIONS[0]%%\.*} ]] &&
+    [[ $TARGET -gt $LATEST ]] &&
+    [[ $LATEST -gt 20 ]] &&
+    SELECTED_VERSION="${EXTENSION_VERSIONS[0]}" &&
+    [[ ! $UPDATE_MODE ]] &&
+    echo -e "\e[0;33mWARNING\e[0m: Extension not available for GNOME Shell $1, using $SELECTED_VERSION version" >&2; }
 }
 
 select_version() {
