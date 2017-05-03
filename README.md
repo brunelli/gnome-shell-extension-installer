@@ -39,6 +39,7 @@ Dependencies:
 - `curl`
 - `dbus`
 - `glib2`
+- `git` (optional)
 - `less` (optional)
 
 ```
