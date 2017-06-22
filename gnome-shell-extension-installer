@@ -30,21 +30,6 @@ Usage examples:
 EOF
 }
 
-check_version_validation() {
-  DISABLE_VERSION_VALIDATION=$( gsettings get org.gnome.shell disable-extension-version-validation )
-  [ "$DISABLE_VERSION_VALIDATION" == "true" ] ||
-  { echo -en "\nExtension version validation is enabled." \
-             "\nTo use extensions older than the running version of Shell, you have to disable it." \
-             "\nWould you like to disable it now (y/N)? "
-    [ $SKIP_PROMPTS ] &&
-    { echo "yes"
-      DO_IT="yes"; } ||
-    read DO_IT
-    [[ ${DO_IT::1} =~ (y|Y) ]] &&
-    gsettings set org.gnome.shell disable-extension-version-validation true &&
-    echo -e "\nThe extension version validation has been disabled."; }
-}
-
 enable_extension() {
   EXTL_OUTPUT=$( gnome-shell-extension-tool --enable-extension="$2" 2>&1 )
   sed -n "s/^'.*' is\( now\)\?\(.*\)\.$/[$1] Extension\2/p" <<< "$EXTL_OUTPUT"
@@ -149,7 +134,6 @@ get_other_version() {
     select_version; }
   echo
   [ "$SELECTED_VERSION" ] &&
-  check_version_validation &&
   download_version "$EXTENSION_INFO" "$SELECTED_VERSION"
 }
 
