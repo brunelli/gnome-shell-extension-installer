@@ -438,70 +438,53 @@ PAGES=-1
 TOTAL=-1
 unset INSTALL_ARRAY INSTALLED UPDATED SEARCH_STRING SKIP_PROMPTS UPDATE_MODE
 
-ARGS="$(getopt -o hs:y -l help,no-install,restart-shell,search:,update,yes --name "$SCRIPT_NAME" -- "$@")"
-eval set -- "$ARGS"
-
-while true; do
-  case "$1" in
-    -h|--help)
-      usage_guide
-      exit 0
-      ;;
-    --no-install)
-      INSTALL="download"
-      shift
-      ;;
-    --restart-shell)
-      [[ "$XDG_SESSION_TYPE" == "wayland" ]] &&
-      RESTART=-1 ||
+while [ $# -gt 0 ]; do
+  if [[ $1 =~ ^-(h|-help)$ ]]; then
+    usage_guide
+    exit 0
+  elif [[ $1 =~ ^-(s|-search)$ ]]; then
+    [[ -n ${SEARCH_STRING+ } ]] &&
+    { echo -e "$SCRIPT_NAME: excessive arguments" >&2
+      exit 2; }
+    if [[ ! $2 =~ ^- ]] && [[ ! $2 =~ ^[0-9\.]+$ ]]; then
+      SEARCH_STRING="$2"
+      shift 1
+    else
+      SEARCH_STRING=""
+    fi
+    shift 1
+  elif [ "$1" == "--yes" ]; then
+    SKIP_PROMPTS=1
+    shift
+  elif [ "$1" == "--no-install" ]; then
+    INSTALL="download"
+    shift
+  elif [ "$1" == "--update" ]; then
+    UPDATE_MODE=1
+    shift
+  elif [ "$1" == "--restart-shell" ]; then
+    if [[ "$XDG_SESSION_TYPE" == "wayland" ]]; then
+      echo -e "\e[0;33mWARNING\e[0m: Restart is not available on Wayland" >&2
+      RESTART=-1
+    else
       RESTART=1
-      shift
-      ;;
-    -s|--search)
-      [[ -n ${SEARCH_STRING+ } ]] &&
-      { echo -e "$SCRIPT_NAME: excessive arguments" >&2
-        exit 2; }
-      if [[ ! $2 =~ ^- ]]; then
-        SEARCH_STRING="$2"
-        shift
-      else
-        SEARCH_STRING=""
-      fi
-      shift
-      ;;
-    --update)
-      UPDATE_MODE=1
-      shift
-      ;;
-    -y|--yes)
-      SKIP_PROMPTS=1
-      shift
-      ;;
-    --)
-      shift
-      break
-      ;;
-    *)
-      echo -e "$SCRIPT_NAME: unrecognized option '$1'\n" >&2
-      usage_guide >&2
-      exit 3
-      ;;
-  esac
-done
-
-for ARG in ${@}; do
-  if [[ $ARG =~ ^3\.[0-9\.]+$ ]]; then
-    GNOME_VERSION="$ARG"
-  elif [[ $ARG =~ ^[0-9]+$ ]]; then
-    INSTALL_ARRAY+=( $ARG )
+    fi
+    shift
+  elif [[ $1 =~ ^3\.[0-9\.]+$ ]]; then
+    GNOME_VERSION="$1"
+    shift
+  elif [[ $1 =~ ^[0-9]+$ ]]; then
+    INSTALL_ARRAY+=( $1 )
+    shift
+  elif [[ $1 =~ ^- ]]; then
+    echo -e "$SCRIPT_NAME: unrecognized option '$1'\n" >&2
+    usage_guide >&2
+    exit 3
   else
-    echo "$SCRIPT_NAME: '$ARG' is not a valid Extension ID" >&2
+    echo "$SCRIPT_NAME: '$1' is not a valid Extension ID" >&2
     exit 4
   fi
 done
-
-[[ $RESTART == 1 ]] && [[ "$XDG_SESSION_TYPE" == "wayland" ]] &&
-echo -e "\e[0;33mWARNING\e[0m: Restart is not available on Wayland" >&2
 
 [[ $GNOME_VERSION ]] ||
 { echo -e "\e[0;31mERROR\e[0m: You need to pass a GNOME version as argument" >&2
