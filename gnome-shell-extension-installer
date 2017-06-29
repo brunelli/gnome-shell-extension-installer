@@ -3,7 +3,8 @@
    #################################################################
    #                                                               #
    #              GNOME Shell Extension Installer 1.6              #
-   #                Copyright (C) 2017 Ian Brunelli                #
+   #                                                               #
+   #       Copyright (C) 2017 Ian Brunelli <ian@brunelli.me>       #
    #       Licensed under the GNU General Public License 2.0       #
    #                                                               #
    #  https://github.com/brunelli/gnome-shell-extension-installer  #
@@ -102,7 +103,7 @@ check_version_availability() {
     [[ $LATEST -gt 20 ]] &&
     SELECTED_VERSION="${EXTENSION_VERSIONS[0]}" &&
     [[ ! $UPDATE_MODE ]] &&
-    echo -e "\e[0;33mWARNING\e[0m: Extension not available for GNOME Shell $1, using $SELECTED_VERSION version" >&2; }
+    echo -e "\e[0;33mWARNING\e[0m: Extension not available for GNOME Shell $1, using $SELECTED_VERSION instead" >&2; }
 }
 
 select_version() {
@@ -526,14 +527,14 @@ elif [ ${#INSTALL_ARRAY[@]} -gt 0 ]; then
     get_extension "$GNOME_VERSION"
   done
 elif [[ $UPDATE_MODE ]]; then
-  UPDATE_LIST=($( find -L "$EXTENSIONS_PATH" -maxdepth 2 -name "metadata.json" -exec \
-                       sed -n "s/^[[:space:]]*\"uuid[\": ]\+\(.*\)\".*$/\1/p" {} \; ))
+  UPDATE_LIST=($( find -L "$EXTENSIONS_PATH" -maxdepth 2 -name "metadata.json" \
+                       -exec sed -n "s/^[[:space:]]*\"uuid[\": ]\+\(.*\)\".*$/\1/p" {} \; ))
   for EXTENSION in ${UPDATE_LIST[@]}; do
     IS_GIT_DIR=$( type git > /dev/null 2> /dev/null &&
                   git -C "$EXTENSIONS_PATH/$EXTENSION/" rev-parse --is-inside-work-tree 2> /dev/null )
     if [[ $IS_GIT_DIR ]]; then
       echo "[$EXTENSION] Updating from git"
-      GIT_UPDATE=$( LANG=en_US git -C "$EXTENSIONS_PATH/$EXTENSION/" pull )
+      GIT_UPDATE=$( LANG=en_US git -C "$EXTENSIONS_PATH/$EXTENSION/" pull 2>&1 )
       case "$GIT_UPDATE" in
         "Already up-to-date.")
           echo "[$EXTENSION] The extension is up-to-date"
