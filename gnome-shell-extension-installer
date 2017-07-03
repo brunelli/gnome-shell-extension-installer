@@ -171,6 +171,9 @@ download_info() {
       echo -e "\e[0;31mERROR\e[0m: $3 could not be found" >&2
       return 22
       ;;
+    130)
+      return 1
+      ;;
     *)
       echo -e "\e[0;31mERROR\e[0m: $4 (curl error $?)" >&2
       return 1
@@ -212,6 +215,9 @@ download_comments() {
     22)
       echo -e "\e[0;31mERROR\e[0m: $3 could not be found" >&2
       return 22
+      ;;
+    130)
+      return 1
       ;;
     *)
       echo -e "\e[0;31mERROR\e[0m: $4 (curl error $?)" >&2
@@ -271,6 +277,7 @@ restart_shell() {
 interactive_search() {
   echo -e "Type \"help\" to get information on how to use the search."
   while IFS='' read -r -e -d $'\n' -p "Enter a command: " COMMAND; do
+    trap echo SIGINT
     if [[ $COMMAND =~ ^[0-9]+( |[0-9])*$ ]]; then
       for n in $COMMAND; do
         if extract_info "${EXTENSIONS_QUERY[$n]}" && [ $n -lt $TOTAL ]; then
@@ -392,6 +399,7 @@ interactive_search() {
     else
       echo "Unknown command. Type h for help." >&2
     fi
+    trap - SIGINT
     history -s "$COMMAND"
   done
 }
