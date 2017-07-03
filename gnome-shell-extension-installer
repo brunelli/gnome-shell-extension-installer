@@ -270,9 +270,7 @@ restart_shell() {
 
 interactive_search() {
   echo -e "Type \"help\" to get information on how to use the search."
-  while [[ ! $EXIT ]]; do
-    echo -n "Enter a command: "
-    read COMMAND
+  while IFS='' read -r -e -d $'\n' -p "Enter a command: " COMMAND; do
     if [[ $COMMAND =~ ^[0-9]+( |[0-9])*$ ]]; then
       for n in $COMMAND; do
         if extract_info "${EXTENSIONS_QUERY[$n]}" && [ $n -lt $TOTAL ]; then
@@ -376,7 +374,7 @@ interactive_search() {
       [ $TOTAL -gt 0 ] &&
       echo -e "$SEARCH_CONTENT"
     elif [[ $COMMAND =~ ^(exit|quit|q)$ ]]; then
-      return
+      break
     elif [[ $COMMAND =~ ^/ ]]; then
       if [ "${COMMAND:1}" ]; then
         SEARCH_STRING="${COMMAND:1}"
@@ -394,6 +392,7 @@ interactive_search() {
     else
       echo "Unknown command. Type h for help." >&2
     fi
+    history -s "$COMMAND"
   done
 }
 
