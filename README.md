@@ -38,6 +38,7 @@ Dependencies:
 - `bash`
 - `curl`
 - `dbus`
+- `perl`
 - `git` (optional)
 - `less` (optional)
 

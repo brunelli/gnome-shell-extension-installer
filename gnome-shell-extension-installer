@@ -185,18 +185,21 @@ extract_comments() {
   IFS=$'\n' read -d '' -r -a COMMENTS_QUERY <<< "$( echo $EXTENSION_COMMENTS | cut -f1 --complement -d"[" | sed 's/, {/\n/g' )"
 
   for COMMENT in "${COMMENTS_QUERY[@]}"; do
-    COMMENT_AUTHOR=$( sed 's/^.*\"username\"[: \"]*\([^\"]*\).*$/\1/' <<< "$COMMENT" )
-    COMMENT_ISCREATOR=$( sed 's/^.*\"is_extension_creator\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$COMMENT" )
-    COMMENT_DATE=$( sed 's/^.*\"standard\"[: \"]*\([^\"]*\).*$/\1/' <<< "$COMMENT" )
-    COMMENT_RATING=$( sed 's/^.*\"rating\"[: \"]*\([^\"]*\),.*$/\1/' <<< "$COMMENT" )
-    COMMENT_TEXT=$( sed 's/^.*\"comment\"[: \"]*\([^\"]*[^\r\n]*\).*$/\1/' <<< "$COMMENT" |
-                    sed 's/", ".*//g' | sed 's/\\"/"/g' )
-    echo -n "\e[1;34m$COMMENT_AUTHOR\e[0m$(if [ "$COMMENT_ISCREATOR" == "true" ]; then echo -n " [A]"; fi)"
-    echo " ($COMMENT_DATE):"
-    if [[ "$COMMENT_RATING" =~ ^[0-9]+$ ]]; then echo "Rating: $COMMENT_RATING"; fi
-    if [ "$COMMENT_TEXT" != "$COMMENT" ]; then echo "$COMMENT_TEXT"; fi
-    echo
-    unset COMMENT_AUTHOR COMMENT_ISCREATOR COMMENT_DATE COMMENT_RATING COMMENT_TEXT
+    perl -ne '
+         foreach $a (qw/username is_extension_creator standard rating comment/) {
+           /"($a)"\s*:\s*("([^"]*)"|[a-z0-9]+)/;
+           if ($1 eq "username") {
+             print "\e[1;34m$3\e[0m"
+           } elsif ($1 eq "is_extension_creator") {
+             if ($2 eq "true") { print " [A]" }
+           } elsif ($1 eq "standard") {
+             print " ($3):\n"
+           } elsif ($1 eq "rating") {
+             print "Rating: $2\n"
+           } elsif ($1 eq "comment") {
+             print "$3\n\n"
+           }
+         }' <<< "$COMMENT"
   done
 }
 
@@ -302,12 +305,12 @@ interactive_search() {
                           "The page" \
                           "Failed to get comments" &&
         { EXTENSION_COMMENTS=$( extract_comments )
-        if [[ $( echo -e "$EXTENSION_COMMENTS" | wc -l ) -gt 10 ]] &&
-           [[ $( type less 2> "/dev/null" ) ]]; then
-          less -R <<< "$( echo -e "[$EXTENSION_NAME]\n\n$EXTENSION_COMMENTS" )"
-        else
-          echo -e "\n$EXTENSION_COMMENTS\n"
-        fi; }
+          if [[ $( echo -e "$EXTENSION_COMMENTS" | wc -l ) -gt 10 ]] &&
+             [[ $( type less 2> "/dev/null" ) ]]; then
+            less -R <<< "$( echo -e "[$EXTENSION_NAME]\n\n$EXTENSION_COMMENTS" )"
+          else
+            echo -e "\n$EXTENSION_COMMENTS\n"
+          fi; }
       else
         echo "[${COMMAND:1}] Invalid extension number" >&2
       fi
