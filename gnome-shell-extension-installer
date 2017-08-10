@@ -72,7 +72,10 @@ download_version() {
   [ -f "$METADATA_FILE" ] &&
   { VERSION_TARGET=$( sed "s/^.*$2\": {\"pk[\": ]\+[0-9]\+[\", ]\+version[\": ]\+\([0-9]\+\)}.*$/\1/" <<< "$1" )
     VERSION_INSTALLED=$( sed -n "s/^[[:space:]]*\"version[\": ]\+\([0-9]\+\).*$/\1/p" "$METADATA_FILE" )
-    [ $VERSION_TARGET -le $VERSION_INSTALLED ] &&
+    [[ $VERSION_INSTALLED ]] ||
+    { echo -e "\e[0;31mERROR\e[0m: Use your package manager to update this extension" >&2
+      return 1; }
+    [[ $VERSION_TARGET -le $VERSION_INSTALLED ]] &&
     { if [ $UPDATE_MODE ]; then
         echo "[$EXTENSION_NAME] The extension is up-to-date"
         return 2
