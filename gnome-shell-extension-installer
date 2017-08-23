@@ -160,7 +160,7 @@ download_info() {
   unset EXTENSION_INFO EXTENSIONS_QUERY EXTENSION_COMMENTS
   PAGES=-1
   TOTAL=-1
-  EXTENSION_INFO=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE$1" )
+  EXTENSION_INFO=$( curl $DOWNLOAD_PARAMETERS "$EXTENSIONS_SITE${1// /%20}" )
   case "$?" in
     0)
       if [ "$( echo $EXTENSION_INFO | grep name )" ]; then
