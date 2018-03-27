@@ -531,9 +531,9 @@ elif [[ $UPDATE_MODE ]]; then
                   git -C "$EXTENSIONS_PATH/$EXTENSION/" rev-parse --is-inside-work-tree 2> /dev/null )
     if [[ $IS_GIT_DIR ]]; then
       echo "[$EXTENSION] Updating from git"
-      GIT_UPDATE=$( LANG=en_US git -C "$EXTENSIONS_PATH/$EXTENSION/" pull 2>&1 )
+      GIT_UPDATE=$( LANG=en_US git -C "$EXTENSIONS_PATH/$EXTENSION/" pull --rebase=false 2>&1 )
       case "$GIT_UPDATE" in
-        "Already up-to-date.")
+        "Already up"*)
           echo "[$EXTENSION] The extension is up-to-date"
           ;;
         "")
