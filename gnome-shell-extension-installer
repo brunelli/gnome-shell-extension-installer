@@ -303,6 +303,9 @@ interactive_search() {
       done
     elif [[ $COMMAND =~ ^c( )*[0-9]+$ ]]; then
       if [[ ${COMMAND:1} -lt $TOTAL ]]; then
+        command -v gnome-shell > /dev/null ||
+        { echo -e "\e[0;31mERROR\e[0m: Comments can't be parsed, perl is not installed." >&2
+          continue; }
         extract_info "${EXTENSIONS_QUERY[${COMMAND:1}]}"
         echo "[$EXTENSION_NAME] Getting comments"
         download_comments "/comments/all/?pk=$EXTENSION_ID&all=true" \
@@ -431,6 +434,13 @@ get_extension() {
     install_version
 }
 
+for CMD in curl dbus-send
+do
+    command -v "$CMD" > /dev/null ||
+    { echo "Missing required command: ${CMD}" >&2
+      exit 1; }
+done
+
 GNOME_VERSION=$( gnome-shell --version 2> /dev/null |
                  sed -n "s/^.* \([0-9]\+\.[0-9]\+\).*$/\1/p" )
 DOWNLOAD_PARAMETERS="-Lfs"
@@ -441,7 +451,7 @@ SORT="popularity"
 EXTENSIONS_PATH="/usr/share/gnome-shell/extensions" ||
 { EXTENSIONS_PATH="$HOME/.local/share/gnome-shell/extensions"
   mkdir -p "$EXTENSIONS_PATH"; }
-[[ $( type gnome-shell 2> "/dev/null" ) ]] &&
+command -v gnome-shell > /dev/null &&
 INSTALL="install" ||
 { INSTALL="download"
   echo -e "\e[0;33mWARNING\e[0m: Install is not available" >&2; }
