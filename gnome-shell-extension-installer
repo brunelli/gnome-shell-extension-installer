@@ -28,6 +28,11 @@ Usage examples:
   $SCRIPT_NAME 307 3.8		# Install for Shell 3.8
   $SCRIPT_NAME 53 --no-install	# Download "Pomodoro"
   $SCRIPT_NAME -s "User Themes"	# Search "User Themes"
+
+Installation directory:
+  Extensions will be installed at '/usr/local/share/gnome-shell/extensions' if
+  the script is ran with super user privileges. If not, they will be installed
+  at '$HOME/.local/share/gnome-shell/extensions'.
 EOF
 }
 
