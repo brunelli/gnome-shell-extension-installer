@@ -37,8 +37,14 @@ EOF
 }
 
 enable_extension() {
-  EXTL_OUTPUT=$( gnome-shell-extension-tool --enable-extension="$2" 2>&1 )
-  sed -n "s/^'.*' is\( now\)\?\(.*\)\.$/[$1] Extension\2/p" <<< "$EXTL_OUTPUT"
+  if command -v gnome-extensions > /dev/null
+  then
+    gnome-extensions enable "$2" &&
+    echo "[$1] Extension enabled"
+  else
+    EXTL_OUTPUT=$( gnome-shell-extension-tool --enable-extension="$2" 2>&1 )
+    sed -n "s/^'.*' is\( now\)\?\(.*\)\.$/[$1] Extension\2/p" <<< "$EXTL_OUTPUT"
+  fi
 }
 
 extract_extension() {
