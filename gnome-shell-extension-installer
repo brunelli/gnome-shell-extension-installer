@@ -454,6 +454,9 @@ done
 
 GNOME_VERSION=$( gnome-shell --version 2> /dev/null |
                  sed -n "s/^.* \([0-9]\+\.[0-9]\+\).*$/\1/p" )
+if [[ "${GNOME_VERSION%%"."*}" -ge 40 ]]; then
+  GNOME_VERSION="${GNOME_VERSION%%"."*}"
+fi
 DOWNLOAD_PARAMETERS="-Lfs"
 EXTENSIONS_SITE="https://extensions.gnome.org"
 SORT="popularity"
