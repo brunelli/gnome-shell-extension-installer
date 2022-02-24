@@ -1,0 +1,31 @@
+name: gnome-shell-extension-installer
+base: core20
+version: '1.7'
+summary: GNOME Shell Extension Installer
+description: |
+  A bash script to install and search extensions from [extensions.gnome.org](https://extensions.gnome.org/).
+
+grade: stable
+confinement: classic
+
+apps:
+  gnome-shell-extension-installer:
+    command: gnome-shell-extension-installer.wrapper
+    plugs: [home]
+
+parts:
+  gnome-shell-extension-installer:
+    plugin: dump
+    organize:
+      snap/local/gnome-shell-extension-installer.wrapper: gnome-shell-extension-installer.wrapper
+    source: .
+
+  utils:
+    plugin: nil
+    stage-packages:
+      - bash
+      - curl
+      - dbus
+      - perl
+      - git
+      - less
