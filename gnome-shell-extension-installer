@@ -541,7 +541,10 @@ if [[ -n ${SEARCH_STRING+ } ]]; then
                   "The search page for \"$SEARCH_STRING\"" \
                   "Failed to obtain page info" &&
     load_content; }
-  interactive_search
+  if [ -t 1 ];
+  then
+    interactive_search;
+  fi
 elif [ ${#INSTALL_ARRAY[@]} -gt 0 ]; then
   for EXTENSION in ${INSTALL_ARRAY[@]}; do
     get_info_from_id "$EXTENSION" &&
