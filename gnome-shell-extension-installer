@@ -315,7 +315,7 @@ interactive_search() {
     elif [[ $COMMAND =~ ^c( )*[0-9]+$ ]]; then
       if [[ ${COMMAND:1} -lt $TOTAL ]]; then
         command -v gnome-shell > /dev/null ||
-        { echo -e "\e[0;31mERROR\e[0m: Comments can't be parsed, perl is not installed." >&2
+        { echo -e "\e[0;31mERROR\e[0m: Comments can\'t be parsed, perl is not installed." >&2
           continue; }
         extract_info "${EXTENSIONS_QUERY[${COMMAND:1}]}"
         echo "[$EXTENSION_NAME] Getting comments"
